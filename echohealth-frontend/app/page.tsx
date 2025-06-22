@@ -316,7 +316,7 @@ export default function Home() {
             <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center">
               <Heart className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold">Echo Psychology Services</h1>
+            <h1 className="text-2xl font-bold">Echo Psychology</h1>
           </div>
           <p className="text-slate-400 mb-6">
             Creating safe spaces for mental wellness and personal growth

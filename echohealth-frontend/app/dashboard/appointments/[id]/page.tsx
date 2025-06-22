@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 // --- FIX: Uncommented the modal import ---
 import RescheduleModal from '@/app/components/RescheduleModal'; 
+import VideoCallModal from '@/app/components/VideoCallModal';
 // --- END OF FIX ---
 
 // --- Types (assuming they are defined as before) ---
@@ -25,6 +26,7 @@ export default function AppointmentDetailsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showVideoModal, setShowVideoModal] = useState(false);
     const params = useParams();
     const { id } = params;
 
@@ -49,7 +51,7 @@ export default function AppointmentDetailsPage() {
     }, [id]);
 
     const handleStartCall = () => {
-        alert('Starting virtual call... (placeholder)');
+        setShowVideoModal(true);
     };
 
     if (isLoading) return <div>Loading Appointment...</div>;
@@ -61,6 +63,14 @@ export default function AppointmentDetailsPage() {
             {/* --- FIX: Uncommented the conditional rendering of the modal --- */}
             {isModalOpen && <RescheduleModal appointment={appointment} onClose={() => setIsModalOpen(false)} />}
             {/* --- END OF FIX --- */}
+            {/* Video Call Modal */}
+            {showVideoModal && (
+                <VideoCallModal
+                    appointmentId={appointment.id}
+                    onClose={() => setShowVideoModal(false)}
+                    userToken={typeof window !== 'undefined' ? localStorage.getItem('auth_token') || '' : ''}
+                />
+            )}
 
             <nav className="relative z-10 flex justify-between items-center px-8 sm:px-20 py-6 bg-white/80 backdrop-blur-sm border-b border-gray-200">
                 <Link href="/dashboard/doctor" className="font-semibold text-slate-600 hover:text-emerald-600 flex items-center gap-2">

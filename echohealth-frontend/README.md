@@ -34,3 +34,21 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## SEO & Sitemap
+
+This project uses [next-sitemap](https://github.com/iamvishnusankar/next-sitemap) to automatically generate a sitemap.xml and robots.txt for better SEO. After building the project, the sitemap is generated automatically via the `postbuild` script.
+
+### How to generate sitemap
+
+After running `npm run build`, the sitemap and robots.txt will be created in the `public/` directory. You can also run:
+
+```bash
+npm run postbuild
+```
+
+### SEO Metadata
+
+- The site name is set to **Echo Psychology**.
+- The description and keywords are optimized for mental health, therapy, and wellness services.
+- Open Graph and Twitter Card meta tags are included for rich social sharing.

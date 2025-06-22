@@ -16,8 +16,17 @@ const nextConfig: NextConfig = {
   async headers() {
     // Define the script source to include Paystack
     const scriptSrc = "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.paystack.co";
-    // Define the connect source to include Paystack's API
-    const connectSrc = "connect-src 'self' https://api.paystack.co";
+    
+    // Define the connect source to include Paystack's API and Twilio domains
+    const connectSrc = [
+      "connect-src 'self'",
+      "https://api.paystack.co",
+      "wss://global.vss.twilio.com",
+      "https://global.vss.twilio.com",
+      "wss://*.twilio.com",
+      "https://*.twilio.com"
+    ].join(' ');
+    
     // Define the frame source to allow Paystack checkout iframe
     const frameSrc = "frame-src 'self' https://checkout.paystack.com";
 
