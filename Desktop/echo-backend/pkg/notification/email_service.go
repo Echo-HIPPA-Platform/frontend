@@ -3,13 +3,13 @@ package notification
 import (
 	"bytes"
 	"fmt"
-	"html/template"
+	htmltemplate "html/template"
 	"strings"
-	"text/template"
-	"time"
+	texttemplate "text/template"
 
 	"backend/internal/models"
 	"backend/pkg/logger"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -18,13 +18,13 @@ import (
 
 // EmailConfig holds email service configuration
 type EmailConfig struct {
-	AWSRegion     string
-	AWSAccessKey  string
-	AWSSecretKey  string
-	FromEmail     string
-	FromName      string
-	ReplyToEmail  string
-	IsProduction  bool
+	AWSRegion    string
+	AWSAccessKey string
+	AWSSecretKey string
+	FromEmail    string
+	FromName     string
+	ReplyToEmail string
+	IsProduction bool
 }
 
 // EmailService handles HIPAA-compliant email notifications
@@ -44,10 +44,10 @@ type NotificationData struct {
 	AppointmentType  string
 
 	// Platform info
-	PlatformName string
-	SupportEmail string
-	LoginURL     string
-	CancelURL    string
+	PlatformName  string
+	SupportEmail  string
+	LoginURL      string
+	CancelURL     string
 	RescheduleURL string
 
 	// Additional fields for specific templates
@@ -216,7 +216,7 @@ func (e *EmailService) prepareNotificationData(appointment *models.Appointment) 
 // processTemplate processes email template with data
 func (e *EmailService) processTemplate(tmpl *models.NotificationTemplate, data NotificationData) (string, string, string, error) {
 	// Process subject
-	subjectTmpl, err := template.New("subject").Parse(tmpl.Subject)
+	subjectTmpl, err := texttemplate.New("subject").Parse(tmpl.Subject)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to parse subject template: %w", err)
 	}
@@ -227,7 +227,7 @@ func (e *EmailService) processTemplate(tmpl *models.NotificationTemplate, data N
 	}
 
 	// Process text body
-	textTmpl, err := textTemplate.New("text").Parse(tmpl.BodyText)
+	textTmpl, err := texttemplate.New("text").Parse(tmpl.BodyText)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to parse text template: %w", err)
 	}
@@ -238,7 +238,7 @@ func (e *EmailService) processTemplate(tmpl *models.NotificationTemplate, data N
 	}
 
 	// Process HTML body
-	htmlTmpl, err := htmlTemplate.New("html").Parse(tmpl.BodyHTML)
+	htmlTmpl, err := htmltemplate.New("html").Parse(tmpl.BodyHTML)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to parse HTML template: %w", err)
 	}
@@ -313,14 +313,14 @@ func (e *EmailService) sendEmail(to, subject, bodyText, bodyHTML string, appoint
 func (e *EmailService) logNotificationSuccess(appointmentID, recipientID, templateID uint, email, subject, messageID string) {
 	// This would typically save to database via repository
 	// For now, log to application logger
-	e.logger.Info(fmt.Sprintf("Email sent successfully: Appointment=%d, Recipient=%d, Template=%d, MessageID=%s", 
+	e.logger.Info(fmt.Sprintf("Email sent successfully: Appointment=%d, Recipient=%d, Template=%d, MessageID=%s",
 		appointmentID, recipientID, templateID, messageID))
 }
 
 // logNotificationFailure logs failed email delivery
 func (e *EmailService) logNotificationFailure(appointmentID, recipientID, templateID uint, email, subject, reason string) {
 	// This would typically save to database via repository
-	e.logger.Error(fmt.Sprintf("Email failed: Appointment=%d, Recipient=%d, Template=%d, Reason=%s", 
+	e.logger.Error(fmt.Sprintf("Email failed: Appointment=%d, Recipient=%d, Template=%d, Reason=%s",
 		appointmentID, recipientID, templateID, reason))
 }
 
@@ -372,10 +372,3 @@ func (e *EmailService) VerifyEmailAddress(email string) error {
 
 	return nil
 }
-
-// GetSendingQuota gets SES sending quota
-func (e *EmailService) GetSendingQuota() (*ses.SendingQuotaOutput, error) {
-	return e.sesClient.GetSendingQuota(&ses.GetSendingQuotaInput{})
-}
-
-

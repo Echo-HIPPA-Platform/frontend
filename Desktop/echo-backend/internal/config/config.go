@@ -15,6 +15,9 @@ type Config struct {
 	Server   ServerConfig
 	Security SecurityConfig
 	Logging  LoggingConfig
+	Paystack struct {
+        SecretKey string `mapstructure:"secret_key"`
+    } `mapstructure:"paystack"`
 }
 
 type DatabaseConfig struct {

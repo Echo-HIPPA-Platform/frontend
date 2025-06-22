@@ -1,58 +1,61 @@
 package main
 
 import (
+	// Your existing imports
 	"backend/internal/handlers"
+	"backend/internal/middleware"
 	"backend/internal/repository"
 	"backend/internal/routes"
 	"backend/internal/services"
 	"backend/pkg/logger"
-	"backend/pkg/middleware"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 // IntegrateAppointmentSystem integrates the complete appointment scheduling system
-// This function should be called from your main server setup
 func IntegrateAppointmentSystem(router *gin.Engine, db *gorm.DB, logger *logger.Logger, authMiddleware *middleware.AuthMiddleware) {
-	// Initialize repositories
+	// --- FIX: Correct Initialization Order ---
+
+	// 1. Initialize all repositories first
+	userRepo := repository.NewUserRepository(db)
 	appointmentRepo := repository.NewAppointmentRepository(db)
-	userRepo := repository.NewUserRepository(db) // Assuming you have this from existing user system
 
-	// Initialize services
-	appointmentService := services.NewAppointmentService(appointmentRepo, userRepo, logger)
-	
-	// Initialize notification service with AWS SES
-	// Initialize notification repository
-	notificationRepo := repository.NewNotificationRepository(db)
-
-	// Note: Set your verified SES email address here
+	// 2. Initialize the notification service, as the appointment service depends on it
 	fromEmail := "noreply@yourhealthcareapp.com" // Replace with your verified SES email
-	notificationService := services.NewNotificationService(notificationRepo, appointmentRepo, userRepo, logger, fromEmail)
+	notificationService, err := services.NewNotificationService(
+		appointmentRepo,
+		userRepo,
+		logger,
+		fromEmail,
+	)
+	if err != nil {
+		logger.Error("Failed to initialize notification service: " + err.Error())
+		return
+	}
 
-	// Initialize handlers
-	appointmentHandler := handlers.NewAppointmentHandler(appointmentService, notificationService, logger)
+	// 3. Initialize the appointment service
+	appointmentService := services.NewAppointmentService(appointmentRepo, userRepo, logger)
 
-	// Setup routes
+	// 4. Initialize the handler with the correctly created services
+	appointmentHandler := handlers.NewAppointmentHandler(appointmentService, logger) // The handler only needs the appointment service
+
+	// 5. Setup the routes
 	routes.SetupAppointmentRoutes(router, appointmentHandler, authMiddleware)
 
 	// Optional: Setup scheduled reminder job
-	// This would typically be done in a separate service or cron job
-	// setupReminderScheduler(notificationService, logger)
+	setupReminderScheduler(notificationService, logger)
 }
 
 // setupReminderScheduler sets up automated appointment reminders
-// This is an example of how you might implement scheduled reminders
 func setupReminderScheduler(notificationService *services.NotificationService, logger *logger.Logger) {
-	// Example using a simple go routine with time.Ticker
-	// In production, you'd want to use a proper job scheduler like cron
 	ticker := time.NewTicker(24 * time.Hour) // Run daily
 	go func() {
 		for {
-			select {
-			case <-ticker.C:
-				if err := notificationService.SendAppointmentReminders(); err != nil {
-					logger.Error("Failed to send appointment reminders: " + err.Error())
-				}
+			<-ticker.C
+			if err := notificationService.SendAppointmentReminders(); err != nil {
+				logger.Error("Failed to send appointment reminders: " + err.Error())
 			}
 		}
 	}()

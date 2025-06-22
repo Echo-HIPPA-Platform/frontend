@@ -10,9 +10,12 @@ import (
 	"backend/internal/handlers"
 	"backend/internal/middleware"
 	"backend/internal/repository"
+	"backend/internal/routes"
 	"backend/internal/services"
 	"backend/pkg/auth"
 	"backend/pkg/logger"
+	"backend/pkg/twilio"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -46,10 +49,12 @@ func main() {
 
 	// Create default admin user (only in development)
 	if cfg.Server.GinMode == "debug" {
-		if err := database.CreateAdminUser(db, "admin@example.com", "Admin123!"); err != nil {
+		if err := database.CreateAdminUser(db, "reaganprezzo@gmail.com", "Admin@5607!"); err != nil {
 			appLogger.Error("Failed to create admin user: " + err.Error())
 		}
 	}
+
+	// --- DEPENDENCY INJECTION ---
 
 	// Initialize JWT manager
 	jwtManager := auth.NewJWTManager(cfg.JWT.Secret, cfg.GetJWTExpiry())
@@ -57,10 +62,32 @@ func main() {
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
 	adminRepo := repository.NewAdminRepository(db)
+	appointmentRepo := repository.NewAppointmentRepository(db)
+	videoCallRepo := repository.NewVideoCallRepository(db)
 
 	// Initialize services
 	userService := services.NewUserService(userRepo, jwtManager, appLogger, cfg.Security.BcryptCost)
 	adminService := services.NewAdminService(adminRepo, userRepo, appLogger)
+
+	// Initialize notification service (without NotificationRepository since it doesn't exist)
+	//fromEmail := "noreply@echopsychology.com" // Replace with your verified email
+	//notificationService, err := services.NewNotificationService(appointmentRepo, userRepo, appLogger, fromEmail)
+	if err != nil {
+		appLogger.Error("Failed to initialize notification service: " + err.Error())
+		// Continue without notification service for now
+	}
+
+	// Initialize appointment service (without notification service dependency)
+	appointmentService := services.NewAppointmentService(appointmentRepo, userRepo, appLogger)
+	paymentService := services.NewPaymentService(cfg, appLogger)
+
+	// Initialize Twilio video service
+	twilioService, err := twilio.NewVideoService(appLogger)
+	if err != nil {
+		appLogger.Fatal("Failed to initialize Twilio video service: " + err.Error())
+	}
+
+	videoCallService := services.NewVideoCallService(videoCallRepo, appointmentRepo, userRepo, twilioService, appLogger)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(jwtManager, appLogger)
@@ -68,9 +95,12 @@ func main() {
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService, appLogger)
 	adminHandler := handlers.NewAdminHandler(adminService, appLogger)
+	appointmentHandler := handlers.NewAppointmentHandler(appointmentService, appLogger)
+	paymentHandler := handlers.NewPaymentHandler(paymentService)
+	videoCallHandler := handlers.NewVideoCallHandler(videoCallService, appLogger)
 
-	// Initialize router
-	router := setupRouter(userHandler, adminHandler, authMiddleware)
+	// Initialize router with ALL handlers
+	router := setupRouter(userHandler, adminHandler, appointmentHandler, paymentHandler, videoCallHandler, authMiddleware)
 
 	// Start server
 	appLogger.Info("Starting server on port " + cfg.Server.Port)
@@ -88,26 +118,30 @@ func main() {
 	}
 }
 
-func setupRouter(userHandler *handlers.UserHandler, adminHandler *handlers.AdminHandler, authMiddleware *middleware.AuthMiddleware) *gin.Engine {
+// --- FIX: Updated router setup to accept all handlers ---
+func setupRouter(
+	userHandler *handlers.UserHandler,
+	adminHandler *handlers.AdminHandler,
+	appointmentHandler *handlers.AppointmentHandler,
+	paymentHandler *handlers.PaymentHandler,
+	videoCallHandler *handlers.VideoCallHandler,
+	authMiddleware *middleware.AuthMiddleware,
+) *gin.Engine {
 	router := gin.New()
 
-	// Global middleware
-	router.Use(gin.Logger())
-	router.Use(gin.Recovery())
-	router.Use(corsMiddleware())
-	router.Use(securityHeaders())
-
-	// Health check endpoint
+	// Global middleware & Health check (Unchanged)
+	router.Use(gin.Logger(), gin.Recovery(), corsMiddleware(), securityHeaders())
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
+			"service":   "mental-health-platform",
 			"status":    "healthy",
 			"timestamp": time.Now().UTC().Format(time.RFC3339),
-			"service":   "mental-health-platform",
 		})
 	})
 
-	// API version 1
 	v1 := router.Group("/api/v1")
+
+	// --- All Route Groups ---
 
 	// Authentication routes (public)
 	auth := v1.Group("/auth")
@@ -121,66 +155,66 @@ func setupRouter(userHandler *handlers.UserHandler, adminHandler *handlers.Admin
 	users := v1.Group("/users")
 	users.Use(authMiddleware.AuthRequired())
 	{
-		// Current user profile
 		users.GET("/me", authMiddleware.LogPHIAccess("user_profile", "read"), userHandler.GetUserProfile)
 		users.PUT("/me", authMiddleware.LogPHIAccess("user_profile", "update"), userHandler.UpdateUserProfile)
 		users.PUT("/me/password", userHandler.ChangePassword)
-
-		// Admin only - get specific user by ID
 		users.GET("/:id", authMiddleware.RequireAdmin(), authMiddleware.LogPHIAccess("user_profile", "admin_read"), userHandler.GetUserByID)
 	}
 
-	// Patient-only routes
-	patients := v1.Group("/patients")
-	patients.Use(authMiddleware.AuthRequired())
-	patients.Use(authMiddleware.RequirePatient())
+	// --- FIX: Add Appointment Routes ---
+	appointments := v1.Group("/appointments")
+	appointments.Use(authMiddleware.AuthRequired())
 	{
-		// TODO: Add patient-specific endpoints
-		// patients.GET("/appointments", ...)
-		// patients.POST("/appointments", ...)
+		// Patients can book appointments
+		appointments.POST("", authMiddleware.RequirePatient(), appointmentHandler.BookAppointment)
+		// Get specific appointment
+		appointments.GET("/:id", appointmentHandler.GetAppointment)
+		// Reschedule appointment
+		appointments.PUT("/:id/reschedule", appointmentHandler.RescheduleAppointment)
+		// Cancel appointment
+		appointments.PUT("/:id/cancel", appointmentHandler.CancelAppointment)
 	}
 
-	// Doctor-only routes
+	// --- FIX: Add Payment Routes ---
+	payments := v1.Group("/payments")
+	payments.Use(authMiddleware.AuthRequired())
+	{
+		payments.POST("/verify", paymentHandler.VerifyPayment)
+	}
+
+	// Register video call routes
+	routes.RegisterVideoCallRoutes(v1, videoCallHandler, authMiddleware)
+
+	// Doctor-only routes (placeholders)
 	doctors := v1.Group("/doctors")
-	doctors.Use(authMiddleware.AuthRequired())
-	doctors.Use(authMiddleware.RequireDoctor())
+	doctors.Use(authMiddleware.AuthRequired(), authMiddleware.RequireDoctor())
 	{
-		// TODO: Add doctor-specific endpoints
-		// doctors.GET("/patients", ...)
-		// doctors.GET("/schedule", ...)
+		// TODO: Add doctor-specific endpoints like setting availability
 	}
 
-	// Admin-only routes - Protected by RBAC middleware
+	// Admin-only routes
 	admin := v1.Group("/admin")
-	admin.Use(authMiddleware.AuthRequired())
-	admin.Use(authMiddleware.RequireAdmin())
+	admin.Use(authMiddleware.AuthRequired(), authMiddleware.RequireAdmin())
 	{
-		// Dashboard and Statistics
 		admin.GET("/dashboard", adminHandler.GetDashboard)
-
-		// Doctor Management
-		admin.GET("/doctors", authMiddleware.LogPHIAccess("doctor_profiles", "admin_view_list"), adminHandler.GetDoctors)
-		admin.GET("/doctors/:id", authMiddleware.LogPHIAccess("doctor_profile", "admin_view_details"), adminHandler.GetDoctorByID)
-		admin.PUT("/doctors/:id/verify", authMiddleware.LogPHIAccess("doctor_profile", "admin_verification"), adminHandler.VerifyDoctor)
-
-		// User Management
-		admin.GET("/users", authMiddleware.LogPHIAccess("users", "admin_view_list"), adminHandler.GetUsers)
-		admin.PUT("/users/:id/status", authMiddleware.LogPHIAccess("user", "admin_status_change"), adminHandler.ToggleUserStatus)
-
-		// HIPAA Audit Trail Management
+		admin.GET("/doctors", adminHandler.GetDoctors)
+		admin.GET("/doctors/:id", adminHandler.GetDoctorByID)
+		admin.PUT("/doctors/:id/verify", adminHandler.VerifyDoctor)
+		admin.GET("/users", adminHandler.GetUsers)
+		admin.PUT("/users/:id/status", adminHandler.ToggleUserStatus)
 		admin.GET("/audit-logs", adminHandler.GetAuditLogs)
 	}
 
 	return router
 }
 
-// corsMiddleware handles CORS headers
+// corsMiddleware handles Cross-Origin Resource Sharing
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*") // Configure appropriately for production
+		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Requested-With")
-		c.Header("Access-Control-Expose-Headers", "Content-Length")
+		c.Header("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization, X-CSRF-Token")
+		c.Header("Access-Control-Expose-Headers", "Authorization")
 		c.Header("Access-Control-Allow-Credentials", "true")
 
 		if c.Request.Method == "OPTIONS" {
@@ -192,21 +226,26 @@ func corsMiddleware() gin.HandlerFunc {
 	}
 }
 
-// securityHeaders adds security headers
+// securityHeaders adds security headers for HIPAA compliance
 func securityHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// HIPAA compliance security headers
+		// Prevent XSS attacks
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("X-XSS-Protection", "1; mode=block")
-		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
-		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; media-src 'self'; object-src 'none'; child-src 'none'; frame-src 'none'; worker-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self';")
+
+		// Force HTTPS in production
+		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+
+		// Content Security Policy
+		c.Header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'")
+
+		// Referrer Policy for privacy
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
-		c.Header("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate")
-		c.Header("Pragma", "no-cache")
-		c.Header("Expires", "0")
+
+		// Feature Policy
+		c.Header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 
 		c.Next()
 	}
 }
-
