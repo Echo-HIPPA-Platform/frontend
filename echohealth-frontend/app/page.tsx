@@ -27,7 +27,7 @@ export default function Home() {
     { href: "#services", label: "Services" },
     { href: "#testimonials", label: "Stories" },
     { href: "#contact", label: "Contact" },
-    { href: "/resources", label: "Resources" },
+    { href: "/resoucers", label: "Resources" },
   ];
 
   useEffect(() => {
