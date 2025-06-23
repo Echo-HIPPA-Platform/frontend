@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Heart, User, LogOut, Settings, Calendar, Video, ArrowRight, Bell, ClipboardList, Search } from 'lucide-react';
+import { Heart, User, LogOut, Settings, ArrowRight, Bell, ClipboardList, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import usePaystack from '@/app/hooks/usePaystack'; // Import the custom hook we created

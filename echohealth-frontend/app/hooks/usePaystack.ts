@@ -10,7 +10,7 @@ export interface PaystackConfig {
   currency?: string;
   reference?: string;
   metadata?: object;
-  onSuccess: (reference: any) => void;
+  onSuccess: (reference: unknown) => void;
   onClose: () => void;
 }
 
@@ -22,7 +22,7 @@ interface PaystackInlineConfig {
     currency: string;
     ref: string; // The property must be 'ref'
     metadata: object;
-    callback: (response: any) => void; // The property must be 'callback'
+    callback: (response: unknown) => void; // The property must be 'callback'
     onClose: () => void;
 }
 

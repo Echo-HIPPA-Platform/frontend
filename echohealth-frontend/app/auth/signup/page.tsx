@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Heart, User, Mail, Lock, ArrowRight, Phone, Eye, EyeOff, UserCheck, Stethoscope, AlertCircle, CheckCircle } from 'lucide-react';
+import { Heart, User, Mail, Lock, ArrowRight, Eye, EyeOff, UserCheck, Stethoscope, AlertCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -12,11 +12,6 @@ interface RegisterRequest {
   role: 'patient' | 'doctor';
   first_name: string;
   last_name: string;
-}
-
-interface ApiError {
-  message: string;
-  details?: string;
 }
 
 export default function SignUpPage() {
@@ -126,7 +121,7 @@ export default function SignUpPage() {
         if (formData.role === 'doctor') {
           router.push('/auth/login?message=verification-pending');
         } else {
-          router.push('/dashboard');
+          router.push('/dashboard/doctor');
         }
       }, 2000);
 

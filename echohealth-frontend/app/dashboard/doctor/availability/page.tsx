@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Heart, Clock, Save, ArrowLeft } from 'lucide-react';
+import { Heart, Save, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 // Type for a single day's availability
@@ -90,8 +90,8 @@ export default function ManageAvailabilityPage() {
         }
       }
       alert('Availability saved successfully!');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred.');
     } finally {
       setIsSaving(false);
     }

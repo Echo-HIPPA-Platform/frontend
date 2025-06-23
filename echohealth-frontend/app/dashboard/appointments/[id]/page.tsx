@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Heart, User, Calendar, Clock, ArrowLeft, Video, Edit, XCircle } from 'lucide-react';
+import { User, Calendar, Clock, ArrowLeft, Video, Edit, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 // --- FIX: Uncommented the modal import ---
@@ -24,7 +24,6 @@ interface AppointmentDetails {
 export default function AppointmentDetailsPage() {
     const [appointment, setAppointment] = useState<AppointmentDetails | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showVideoModal, setShowVideoModal] = useState(false);
     const params = useParams();
@@ -55,7 +54,6 @@ export default function AppointmentDetailsPage() {
     };
 
     if (isLoading) return <div>Loading Appointment...</div>;
-    if (error) return <div className="text-red-500">{error}</div>;
     if (!appointment) return <div>Appointment not found.</div>;
     
     return (

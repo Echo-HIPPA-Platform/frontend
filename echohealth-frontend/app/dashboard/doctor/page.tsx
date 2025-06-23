@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Heart, User, LogOut, Settings, Calendar, Clock, ArrowRight, ShieldCheck, BriefcaseMedical, Edit3, UserCheck } from 'lucide-react';
+import { Heart, User, LogOut, Settings, Calendar, Clock, ArrowRight, BriefcaseMedical, Edit3, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 
 // --- Types (assuming they are defined as before) ---
@@ -16,7 +16,6 @@ export default function DoctorDashboardPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [availability, setAvailability] = useState<Availability[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -60,7 +59,6 @@ export default function DoctorDashboardPage() {
   );
   
   if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-gray-100">Loading Doctor Dashboard...</div>;
-  if (error) return <div className="min-h-screen flex items-center justify-center bg-red-100 text-red-700 p-8">{error}</div>;
   
   const todayAppointments = appointments.filter(a => new Date(a.scheduled_at).toDateString() === new Date().toDateString());
 
@@ -95,7 +93,7 @@ export default function DoctorDashboardPage() {
         <div className="max-w-7xl mx-auto">
           <header className="mb-12">
             <h2 className="text-4xl lg:text-5xl font-bold text-gray-900">Welcome back, Dr. {doctor?.profile.last_name}!</h2>
-            <p className="text-xl text-slate-600 mt-2">Here’s what your day and week look like.</p>
+            <p className="text-xl text-slate-600 mt-2">Here&apos;s what your day and week look like.</p>
           </header>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
@@ -108,7 +106,7 @@ export default function DoctorDashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-gray-200">
-                <h3 className="text-2xl font-bold text-slate-800 mb-6">Today's Schedule</h3>
+                <h3 className="text-2xl font-bold text-slate-800 mb-6">Today&apos;s Schedule</h3>
                 <div className="space-y-4">
                   {todayAppointments.length > 0 ? todayAppointments
                     .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())

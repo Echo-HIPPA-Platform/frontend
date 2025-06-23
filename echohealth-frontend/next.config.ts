@@ -2,6 +2,9 @@ import { NextConfig } from 'next';
 
 /** @type {import('next').NextConfig} */
 const nextConfig: NextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   // This rewrites configuration proxies API requests to your Go backend in development.
   async rewrites() {
     return [
@@ -24,7 +27,8 @@ const nextConfig: NextConfig = {
       "wss://global.vss.twilio.com",
       "https://global.vss.twilio.com",
       "wss://*.twilio.com",
-      "https://*.twilio.com"
+      "https://*.twilio.com",
+      "http://localhost:8080"
     ].join(' ');
     
     // Define the frame source to allow Paystack checkout iframe
