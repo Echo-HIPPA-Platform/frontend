@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/v1/:path*',
-        destination: 'http://localhost:8080/api/v1/:path*', // Proxy to your Go backend
+        destination: 'http://20.185.56.164:8080/api/v1/:path*', // Fixed: Use your actual server IP
       },
     ]
   },
@@ -28,7 +28,11 @@ const nextConfig: NextConfig = {
       "https://global.vss.twilio.com",
       "wss://*.twilio.com",
       "https://*.twilio.com",
-      "http://localhost:8080"
+      "http://localhost:8080",
+      "http://20.185.56.164:8080",           // Added: Your Azure server IP
+      "https://20.185.56.164:8080",          // Added: HTTPS version just in case
+      "http://echopsychology.com:8080",      // Added: Your domain
+      "https://echopsychology.com:8080"      // Added: HTTPS version
     ].join(' ');
     
     // Define the frame source to allow Paystack checkout iframe
