@@ -25,10 +25,33 @@ interface Appointment {
   status?: string;
 }
 
-interface Availability { 
-  day_of_week: string; 
-  start_time: string; 
-  end_time: string; 
+interface Availability {
+  id?: number;
+  user_id?: number;
+  day_of_week: string;
+  day_of_week_int?: number;
+  start_hour: number;
+  start_minute: number;
+  end_hour: number;
+  end_minute: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface DashboardStats {
+  doctor_name: string;
+  total_users: number;
+  total_patients: number;
+  total_doctors: number;
+  pending_doctors: number;
+  approved_doctors: number;
+  suspended_doctors: number;
+  active_users: number;
+  inactive_users: number;
+  recent_audit_logs: number;
+  total_patients_for_doctor: number;
+  total_pending_notes: number;
+  total_messages: number;
 }
 
 // API configuration
@@ -57,18 +80,6 @@ const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
 
   const response = await fetch(url, config);
   
-  if (!response.ok) {
-    if (response.status === 401) {
-      // Token expired or invalid, redirect to login
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth_token');
-        sessionStorage.removeItem('auth_token');
-        window.location.href = '/login';
-      }
-      throw new Error('Authentication failed');
-    }
-    throw new Error(`API request failed: ${response.status}`);
-  }
   
   return response.json();
 };
@@ -77,6 +88,7 @@ export default function DoctorDashboardPage() {
   const [doctor, setDoctor] = useState<UserResponse | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [availability, setAvailability] = useState<Availability[]>([]);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,40 +105,37 @@ export default function DoctorDashboardPage() {
         // Fetch appointments (you'll need to implement this endpoint in your backend)
         try {
           const appointmentsData = await apiRequest('/appointments');
-          setAppointments(appointmentsData);
+          setAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
         } catch (err) {
           console.warn('Appointments endpoint not available yet, using empty array');
           setAppointments([]);
         }
 
-        // Fetch availability (you'll need to implement this endpoint in your backend)
+        // Fetch availability from the new backend endpoint
         try {
-          const availabilityData = await apiRequest('/doctors/availability');
+          const availabilityData = await apiRequest('/doctors/me/availability');
           setAvailability(availabilityData);
         } catch (err) {
-          console.warn('Availability endpoint not available yet, using empty array');
-          setAvailability([]);
+          console.error('Failed to fetch availability:', err);
+          setAvailability([]); // Fallback to empty array on error
         }
 
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
         
-        // Fallback to mock data for development
-        const mockDoctor: UserResponse = {
-          id: 101, 
-          email: 'e.reed@example.com', 
-          role: 'doctor',
-          profile: { first_name: 'Evelyn', last_name: 'Reed' }
-        };
-        setDoctor(mockDoctor);
+        // Fallback to mock data for development (only if doctor data failed)
+        if (!doctor) {
+          const mockDoctor: UserResponse = {
+            id: 101, 
+            email: 'e.reed@example.com', 
+            role: 'doctor',
+            profile: { first_name: 'Evelyn', last_name: 'Reed' }
+          };
+          setDoctor(mockDoctor);
+        }
         setAppointments([]);
-        setAvailability([
-          { day_of_week: 'monday', start_time: '09:00', end_time: '17:00' },
-          { day_of_week: 'tuesday', start_time: '09:00', end_time: '17:00' },
-          { day_of_week: 'wednesday', start_time: '10:00', end_time: '18:00' },
-          { day_of_week: 'friday', start_time: '09:00', end_time: '15:00' },
-        ]);
+        setAvailability([]); // Ensure availability is empty on error
       } finally {
         setIsLoading(false);
       }
@@ -256,9 +265,9 @@ export default function DoctorDashboardPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             <StatCard title="Appointments Today" value={todayAppointments.length} icon={Calendar} />
-            <StatCard title="Total This Week" value={appointments.length} icon={BriefcaseMedical} />
-            <StatCard title="Pending Notes" value={2} icon={Edit3} />
-            <StatCard title="Messages" value={5} icon={UserCheck} />
+            <StatCard title="Total Patients" value={dashboardStats?.total_patients_for_doctor || 0} icon={BriefcaseMedical} />
+            <StatCard title="Pending Notes" value={dashboardStats?.total_pending_notes || 0} icon={Edit3} />
+            <StatCard title="Messages" value={dashboardStats?.total_messages || 0} icon={UserCheck} />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -309,9 +318,9 @@ export default function DoctorDashboardPage() {
                 <h3 className="text-2xl font-bold text-slate-800 mb-6">Your Weekly Availability</h3>
                 <div className="space-y-3 mb-6">
                   {availability.length > 0 ? availability.map(day => (
-                    <div key={day.day_of_week} className="flex justify-between text-sm p-3 bg-gray-50 rounded-lg">
+                    <div key={day.day_of_week_int} className="flex justify-between text-sm p-3 bg-gray-50 rounded-lg">
                       <span className="font-semibold text-gray-700 capitalize">{day.day_of_week}</span>
-                      <span className="font-mono text-gray-600">{day.start_time} - {day.end_time}</span>
+                      <span className="font-mono text-gray-600">{`${String(day.start_hour).padStart(2, '0')}:${String(day.start_minute).padStart(2, '0')} - ${String(day.end_hour).padStart(2, '0')}:${String(day.end_minute).padStart(2, '0')}`}</span>
                     </div>
                   )) : (
                     <p className="text-slate-500 text-center py-4">No availability set</p>

@@ -50,7 +50,7 @@ export default function LoginPage() {
         
         // --- FIX: STORE THE AUTHENTICATION TOKEN ---
         if (data.token) {
-          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('auth_token', data.token);
           console.log('Auth token stored in localStorage.');
         }
         // --- END OF FIX ---
