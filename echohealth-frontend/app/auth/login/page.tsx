@@ -68,10 +68,6 @@ export default function LoginPage() {
           case 'admin':
             router.push('/dashboard/admin');
             break;
-          default:
-            console.warn(`Unrecognized role: '${userRole}'. Redirecting to a generic dashboard.`);
-            router.push('/dashboard');
-            break;
         }
 
       } else {
