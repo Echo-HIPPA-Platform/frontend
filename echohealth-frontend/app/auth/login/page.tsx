@@ -12,10 +12,9 @@ export default function LoginPage() {
     password: '',
     rememberMe: false
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,7 +37,7 @@ export default function LoginPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: formData.email,
+          email: formData.email.trim().toLowerCase(),
           password: formData.password,
         }),
       });
@@ -46,17 +45,19 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        console.log('Login successful:', data);
-        
-        // --- FIX: STORE THE AUTHENTICATION TOKEN ---
+        // Store token
         if (data.token) {
           localStorage.setItem('auth_token', data.token);
-          console.log('Auth token stored in localStorage.');
         }
-        // --- END OF FIX ---
+
+        // Store user
+        if (data.user) {
+          localStorage.setItem('user_data', JSON.stringify(data.user));
+        }
 
         const userRole = data.user?.role;
-        console.log(`User role identified: ${userRole}. Redirecting...`);
+        console.log('Login successful. User role:', userRole);
+        console.log('Full user object:', data.user);
 
         switch (userRole) {
           case 'patient':
@@ -68,13 +69,17 @@ export default function LoginPage() {
           case 'admin':
             router.push('/dashboard/admin');
             break;
+          default:
+            console.warn(`Unknown role '${userRole}'. Redirecting to generic dashboard.`);
+            router.push('/dashboard');
+            break;
         }
 
       } else {
-        setError(data.error || 'An unknown error occurred. Please try again.');
+        setError(data.error || data.message || 'Login failed. Please try again.');
       }
     } catch (err) {
-      console.error('Network or server error:', err);
+      console.error('Network error:', err);
       setError('Could not connect to the server. Please check your connection.');
     } finally {
       setIsLoading(false);
@@ -83,12 +88,12 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-blue-50">
-      {/* UI Code is unchanged... */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-emerald-200/20 to-teal-200/20 rounded-full blur-xl animate-pulse"></div>
         <div className="absolute top-60 right-20 w-24 h-24 bg-gradient-to-br from-blue-200/20 to-cyan-200/20 rounded-full blur-lg animate-pulse delay-1000"></div>
         <div className="absolute bottom-40 left-1/4 w-40 h-40 bg-gradient-to-br from-rose-200/20 to-pink-200/20 rounded-full blur-2xl animate-pulse delay-2000"></div>
       </div>
+
       <nav className="relative z-10 flex justify-between items-center px-8 sm:px-20 py-6 bg-white/80 backdrop-blur-sm border-b border-emerald-100">
         <Link href="/" className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center">
@@ -99,6 +104,7 @@ export default function LoginPage() {
           </h1>
         </Link>
       </nav>
+
       <main className="relative z-10 px-8 sm:px-20 py-12">
         <div className="max-w-md mx-auto">
           <div className="text-center mb-10">
@@ -112,6 +118,7 @@ export default function LoginPage() {
               Continue your journey to mental wellness
             </p>
           </div>
+
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 sm:p-12 border border-emerald-100">
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
@@ -119,6 +126,7 @@ export default function LoginPage() {
                   <span className="block sm:inline">{error}</span>
                 </div>
               )}
+
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-2">Email Address</label>
                 <div className="relative">
@@ -135,6 +143,7 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
+
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-2">Password</label>
                 <div className="relative">
@@ -155,14 +164,11 @@ export default function LoginPage() {
                     className="absolute right-3 top-1/2 -translate-y-1/2"
                     disabled={isLoading}
                   >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5 text-slate-400" />
-                    ) : (
-                      <Eye className="w-5 h-5 text-slate-400" />
-                    )}
+                    {showPassword ? <EyeOff className="w-5 h-5 text-slate-400" /> : <Eye className="w-5 h-5 text-slate-400" />}
                   </button>
                 </div>
               </div>
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <input
@@ -182,6 +188,7 @@ export default function LoginPage() {
                   Forgot password?
                 </Link>
               </div>
+
               <div className="flex flex-col gap-4 pt-6">
                 <button
                   type="submit"
@@ -191,6 +198,7 @@ export default function LoginPage() {
                   {isLoading ? 'Signing In...' : 'Sign In'}
                   {!isLoading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
                 </button>
+
                 <div className="text-center">
                   <span className="text-slate-600">Don't have an account?</span>
                   <Link href="/auth/signup" className="ml-2 text-emerald-600 hover:text-emerald-500 font-medium">
