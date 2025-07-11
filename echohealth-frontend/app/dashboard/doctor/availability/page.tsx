@@ -93,9 +93,9 @@ export default function DoctorAvailabilityPage() {
     const newAvailability = [...availability];
     // Ensure numeric fields are parsed as numbers
     if (['start_hour', 'start_minute', 'end_hour', 'end_minute'].includes(field as string)) {
-      newAvailability[index][field] = Number(value) as any; // Type assertion needed due to string|number union
+      (newAvailability[index] as any)[field] = Number(value);
     } else {
-      newAvailability[index][field] = value as any; // Type assertion needed
+      (newAvailability[index] as any)[field] = value;
     }
     setAvailability(newAvailability);
   };

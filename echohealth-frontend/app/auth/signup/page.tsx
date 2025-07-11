@@ -87,7 +87,7 @@ export default function SignUpPage() {
         last_name: formData.lastName.trim()
       };
 
-      const response = await fetch('/api/v1/auth/register', {
+      const response = await fetch('http://localhost:8080/api/v1/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -108,6 +108,12 @@ export default function SignUpPage() {
         : 'Account created successfully! Redirecting to dashboard...'
       );
 
+        setSuccess(formData.role === 'patient' 
+          ? 'Account created successfully! Your patient account is pending verification.' 
+          : 'Account created successfully! Redirecting to dashboard...'
+        
+      );
+
       // Store auth token if provided
       if (data.token) {
         localStorage.setItem('auth_token', data.token);
@@ -122,6 +128,9 @@ export default function SignUpPage() {
           router.push('/auth/login?message=verification-pending');
         } else {
           router.push('/dashboard/doctor');
+        }
+        if (formData.role === 'patient') {
+          router.push('/dashboard/patient');
         }
       }, 2000);
 
