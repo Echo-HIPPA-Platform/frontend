@@ -9,7 +9,7 @@ import {
   Bell, 
   Database, 
   Mail, 
-  Security, 
+  Lock,
   Globe, 
   Save, 
   Plus, 

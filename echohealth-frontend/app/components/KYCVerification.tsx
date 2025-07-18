@@ -418,7 +418,7 @@ export default function KYCVerification({ doctorId, currentStatus = 'incomplete'
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => handleFileUpload('medicalLicense', e.target.files?.[0] || null)}
+                onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileUpload('medicalLicense', file); }}
                 className="w-full p-3 rounded-xl border border-slate-200 focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 transition-colors"
               />
               {errors.medicalLicense && (
@@ -434,7 +434,7 @@ export default function KYCVerification({ doctorId, currentStatus = 'incomplete'
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => handleFileUpload('diploma', e.target.files?.[0] || null)}
+                onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileUpload('diploma', file); }}
                 className="w-full p-3 rounded-xl border border-slate-200 focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 transition-colors"
               />
               {errors.diploma && (
@@ -450,7 +450,7 @@ export default function KYCVerification({ doctorId, currentStatus = 'incomplete'
               <input
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => handleFileUpload('idDocument', e.target.files?.[0] || null)}
+                onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileUpload('idDocument', file); }}
                 className="w-full p-3 rounded-xl border border-slate-200 focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 transition-colors"
               />
               {errors.idDocument && (
