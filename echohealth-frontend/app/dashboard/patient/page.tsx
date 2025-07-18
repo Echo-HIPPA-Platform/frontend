@@ -38,7 +38,7 @@ const PaystackScheduleButton = ({ userEmail, userName }: { userEmail: string; us
     // Securely verifies the transaction with your Go backend
     const verifyPaymentOnBackend = useCallback(async (reference: string) => {
         try {
-            const token = localStorage.getItem('authToken');
+            const token = localStorage.getItem('auth_token');
             const response = await fetch('/api/v1/payments/verify', {
                 method: 'POST',
                 headers: {
@@ -134,7 +134,7 @@ export default function PatientDashboardPage() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('auth_token');
       if (!token) {
         window.location.href = '/auth/login';
         return;
@@ -200,8 +200,11 @@ export default function PatientDashboardPage() {
                 <h3 className="text-2xl font-bold text-slate-800 mb-6">Quick Actions</h3>
                 <div className="space-y-4">
                   
-                  {/* The Paystack button is rendered here, getting the user's email and name */}
-                  {user && <PaystackScheduleButton userEmail={user.email} userName={`${user.profile.first_name} ${user.profile.last_name}`} />}
+                  {/* Schedule Appointment - now leads to doctor selection */}
+                  <Link href="/doctors" className="w-full group bg-emerald-500 text-white px-6 py-4 rounded-xl font-semibold text-lg hover:bg-emerald-600 transition-all duration-300 flex items-center justify-between">
+                    <span>Schedule Appointment</span>
+                    <ArrowRight className="w-5 h-5 text-white" />
+                  </Link>
 
                   <Link href="/appointments/history" className="w-full group bg-slate-100 text-slate-700 px-6 py-4 rounded-xl font-semibold text-lg hover:bg-slate-200 transition-all duration-300 flex items-center justify-between"><span>Appointment History</span><ClipboardList className="w-5 h-5 text-slate-400" /></Link>
                   <Link href="/doctors" className="w-full group bg-slate-100 text-slate-700 px-6 py-4 rounded-xl font-semibold text-lg hover:bg-slate-200 transition-all duration-300 flex items-center justify-between"><span>Find a Doctor</span><Search className="w-5 h-5 text-slate-400" /></Link>

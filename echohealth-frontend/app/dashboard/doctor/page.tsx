@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, User, LogOut, Settings, Calendar, Clock, ArrowRight, BriefcaseMedical, Edit3, UserCheck } from 'lucide-react';
 import Link from 'next/link';
+import KYCVerification from '@/app/components/KYCVerification';
 
 // --- Types ---
 interface UserProfile { 
@@ -91,6 +92,7 @@ export default function DoctorDashboardPage() {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [kycStatus, setKycStatus] = useState<'pending' | 'approved' | 'rejected' | 'incomplete'>('incomplete');
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -118,6 +120,17 @@ export default function DoctorDashboardPage() {
         } catch (err) {
           console.error('Failed to fetch availability:', err);
           setAvailability([]); // Fallback to empty array on error
+        }
+
+        // Fetch current KYC status
+        try {
+          const kycData = await apiRequest('/doctors/me/kyc-status');
+          if (kycData && kycData.kyc_status) {
+            setKycStatus(kycData.kyc_status);
+          }
+        } catch (err) {
+          console.error('Failed to fetch KYC status:', err);
+          // Keep default status of 'incomplete'
         }
 
       } catch (err) {
@@ -262,6 +275,20 @@ export default function DoctorDashboardPage() {
               Here&apos;s what your day and week look like.
             </p>
           </header>
+
+          {/* KYC Verification Section */}
+          <KYCVerification 
+            doctorId={doctor?.id || 0}
+            currentStatus={kycStatus}
+            onSubmit={(data) => {
+              console.log('KYC data submitted:', data);
+              // Here you would send the data to your backend
+            }}
+            onStatusChange={(newStatus) => {
+              console.log('KYC status changed to:', newStatus);
+              setKycStatus(newStatus);
+            }}
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             <StatCard title="Appointments Today" value={todayAppointments.length} icon={Calendar} />

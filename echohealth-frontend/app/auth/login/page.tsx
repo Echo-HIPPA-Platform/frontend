@@ -30,39 +30,60 @@ export default function LoginPage() {
     setError(null);
 
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+    console.log('Login attempt with API base URL:', apiBaseUrl);
 
     try {
+      const loginData = {
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password
+      };
+      console.log('Sending login request with email:', loginData.email);
+
       const response = await fetch(`${apiBaseUrl}/api/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email.trim().toLowerCase(),
-          password: formData.password
-        })
+        body: JSON.stringify(loginData)
       });
 
+      console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', { ...data, token: data.token ? '[REDACTED]' : 'none' });
 
       if (!response.ok) {
         throw new Error(data.message || data.error || 'Login failed.');
       }
 
-      if (data.token) localStorage.setItem('auth_token', data.token);
-      if (data.user) localStorage.setItem('user_data', JSON.stringify(data.user));
+      // Store authentication data
+      if (data.token) {
+        localStorage.setItem('auth_token', data.token);
+        console.log('Token stored successfully');
+      }
+      if (data.user) {
+        localStorage.setItem('user_data', JSON.stringify(data.user));
+        console.log('User data stored:', data.user);
+      }
 
       const role = data.user?.role;
+      console.log('User role:', role);
+
+      // Small delay to ensure localStorage is set
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       switch (role) {
         case 'doctor':
+          console.log('Redirecting to doctor dashboard');
           router.push('/dashboard/doctor');
           break;
         case 'patient':
+          console.log('Redirecting to patient dashboard');
           router.push('/dashboard/patient');
           break;
         case 'admin':
+          console.log('Redirecting to admin dashboard');
           router.push('/dashboard/admin');
           break;
         default:
+          console.log('Redirecting to default dashboard');
           router.push('/dashboard');
           break;
       }
@@ -142,11 +163,23 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-3 rounded-full font-semibold text-lg"
+              className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-3 rounded-full font-semibold text-lg hover:from-emerald-600 hover:to-teal-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
               disabled={isLoading}
             >
               {isLoading ? 'Signing In...' : 'Sign In'}
             </button>
+            
+            <div className="mt-6 text-center">
+              <p className="text-slate-600">
+                Don't have an account?{' '}
+                <Link 
+                  href="/auth/signup" 
+                  className="text-emerald-600 hover:text-emerald-700 font-semibold hover:underline transition-colors"
+                >
+                  Sign up here
+                </Link>
+              </p>
+            </div>
           </form>
         </div>
       </main>
