@@ -254,7 +254,8 @@ export default function SignUpPage() {
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 transition-colors"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-gray-900 placeholder-gray-500 focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 focus:bg-white transition-colors"
+                      placeholder="Enter first name"
                       required
                       minLength={2}
                       maxLength={50}
@@ -272,7 +273,8 @@ export default function SignUpPage() {
                       name="lastName"
                       value={formData.lastName}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 transition-colors"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-gray-900 placeholder-gray-500 focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 focus:bg-white transition-colors"
+                      placeholder="Enter last name"
                       required
                       minLength={2}
                       maxLength={50}
@@ -290,7 +292,8 @@ export default function SignUpPage() {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 transition-colors"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-gray-900 placeholder-gray-500 focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 focus:bg-white transition-colors"
+                      placeholder="Enter your email"
                       required
                     />
                   </div>
@@ -306,7 +309,8 @@ export default function SignUpPage() {
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 transition-colors"
+                      className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 bg-white text-gray-900 placeholder-gray-500 focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 focus:bg-white transition-colors"
+                      placeholder="Create a password"
                       required
                       minLength={8}
                       maxLength={128}
@@ -336,7 +340,8 @@ export default function SignUpPage() {
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 transition-colors"
+                      className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 bg-white text-gray-900 placeholder-gray-500 focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 focus:bg-white transition-colors"
+                      placeholder="Confirm your password"
                       required
                     />
                   </div>

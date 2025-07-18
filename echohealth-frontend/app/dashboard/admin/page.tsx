@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { Users, UserCheck, Clock, ShieldCheck, BarChart2, Check, X, UserX, CheckCircle, Ban, ToggleLeft, ToggleRight, Menu, Settings, FileText, Activity } from 'lucide-react';
 import Link from 'next/link';
+import ActivityLogComponent from '../../../components/admin/ActivityLog';
+import ChartsAndReportsComponent from '../../../components/admin/ChartsAndReports';
+import AdminSettingsComponent from '../../../components/admin/Settings';
 
 // --- Types based on your Go backend DTOs ---
 interface AdminDashboardStats {
@@ -738,14 +741,7 @@ export default function AdminDashboardPage() {
                 <h2 className="text-4xl lg:text-5xl font-bold text-gray-900">Settings</h2>
                 <p className="text-xl text-slate-600 mt-2">System configuration and preferences.</p>
               </header>
-              
-              <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-gray-200">
-                <div className="text-center py-12">
-                  <Settings className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-slate-700 mb-2">Settings Panel</h3>
-                  <p className="text-slate-500">System settings and configuration options will be available here.</p>
-                </div>
-              </div>
+              <AdminSettingsComponent />
             </>
           )}
           
@@ -756,14 +752,7 @@ export default function AdminDashboardPage() {
                 <h2 className="text-4xl lg:text-5xl font-bold text-gray-900">Reports</h2>
                 <p className="text-xl text-slate-600 mt-2">Analytics and reporting dashboard.</p>
               </header>
-              
-              <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-gray-200">
-                <div className="text-center py-12">
-                  <FileText className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-slate-700 mb-2">Reports Dashboard</h3>
-                  <p className="text-slate-500">System reports and analytics will be available here.</p>
-                </div>
-              </div>
+              <ChartsAndReportsComponent />
             </>
           )}
           
@@ -774,14 +763,7 @@ export default function AdminDashboardPage() {
                 <h2 className="text-4xl lg:text-5xl font-bold text-gray-900">Activity Log</h2>
                 <p className="text-xl text-slate-600 mt-2">System activity and audit trail.</p>
               </header>
-              
-              <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl p-8 border border-gray-200">
-                <div className="text-center py-12">
-                  <Activity className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-slate-700 mb-2">Activity Log</h3>
-                  <p className="text-slate-500">System activity monitoring and logs will be available here.</p>
-                </div>
-              </div>
+              <ActivityLogComponent />
             </>
           )}
         </div>
