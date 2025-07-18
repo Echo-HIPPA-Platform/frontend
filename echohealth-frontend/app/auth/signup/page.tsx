@@ -54,6 +54,19 @@ export default function SignUpPage() {
     if (!formData.email.trim()) return 'Email is required';
     if (!formData.password) return 'Password is required';
     if (formData.password.length < 8) return 'Password must be at least 8 characters';
+    if (formData.password.length > 128) return 'Password must be less than 128 characters';
+    
+    // Strong password validation to match backend
+    const hasUpper = /[A-Z]/.test(formData.password);
+    const hasLower = /[a-z]/.test(formData.password);
+    const hasDigit = /[0-9]/.test(formData.password);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password);
+    
+    if (!hasUpper) return 'Password must contain at least one uppercase letter';
+    if (!hasLower) return 'Password must contain at least one lowercase letter';
+    if (!hasDigit) return 'Password must contain at least one digit';
+    if (!hasSpecial) return 'Password must contain at least one special character';
+    
     if (formData.password !== formData.confirmPassword) return 'Passwords do not match';
     if (!formData.role) return 'Please select your role';
     
@@ -87,7 +100,8 @@ export default function SignUpPage() {
         last_name: formData.lastName.trim()
       };
 
-      const response = await fetch('http://localhost:8080/api/v1/auth/register', {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+      const response = await fetch(`${apiBaseUrl}/api/v1/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -108,12 +122,6 @@ export default function SignUpPage() {
         : 'Account created successfully! Redirecting to dashboard...'
       );
 
-        setSuccess(formData.role === 'patient' 
-          ? 'Account created successfully! Your patient account is pending verification.' 
-          : 'Account created successfully! Redirecting to dashboard...'
-        
-      );
-
       // Store auth token if provided
       if (data.token) {
         localStorage.setItem('auth_token', data.token);
@@ -126,10 +134,7 @@ export default function SignUpPage() {
       setTimeout(() => {
         if (formData.role === 'doctor') {
           router.push('/auth/login?message=verification-pending');
-        } else {
-          router.push('/dashboard/doctor');
-        }
-        if (formData.role === 'patient') {
+        } else if (formData.role === 'patient') {
           router.push('/dashboard/patient');
         }
       }, 2000);
@@ -318,7 +323,7 @@ export default function SignUpPage() {
                       )}
                     </button>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">Minimum 8 characters</p>
+                  <p className="mt-1 text-xs text-slate-500">Must contain uppercase, lowercase, digit, and special character</p>
                 </div>
 
                 <div>
