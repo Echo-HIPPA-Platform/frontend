@@ -56,7 +56,8 @@ interface DashboardStats {
 }
 
 // API configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+const apiBaseUrl = API_BASE_URL + '/api/v1';
 
 // API utility functions
 const getAuthToken = () => {
@@ -68,7 +69,7 @@ const getAuthToken = () => {
 
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const token = getAuthToken();
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${apiBaseUrl}${endpoint}`;
   
   const config: RequestInit = {
     ...options,

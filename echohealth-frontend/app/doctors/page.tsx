@@ -39,6 +39,9 @@ interface UserResponse {
   };
 }
 
+// API configuration
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+
 export default function DoctorsPage() {
   const router = useRouter();
   const [user, setUser] = useState<UserResponse | null>(null);
@@ -142,7 +145,7 @@ export default function DoctorsPage() {
       }
 
       try {
-        const userResponse = await fetch('/api/v1/users/me', {
+        const userResponse = await fetch(`${apiBaseUrl}/api/v1/users/me`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (!userResponse.ok) throw new Error('Failed to fetch user profile');
@@ -150,7 +153,7 @@ export default function DoctorsPage() {
         setUser(userData);
 
         // TODO: Replace with actual API call to fetch doctors
-        // const doctorsResponse = await fetch('/api/v1/doctors', {
+        // const doctorsResponse = await fetch(`${apiBaseUrl}/api/v1/doctors`, {
         //   headers: { 'Authorization': `Bearer ${token}` },
         // });
         // const doctorsData = await doctorsResponse.json();
@@ -237,7 +240,7 @@ export default function DoctorsPage() {
                 <Settings size={16} /> Settings
               </Link>
               <div className="border-t my-1"></div>
-              <a href="/api/v1/auth/logout" className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50">
+              <a href="#" onClick={() => { localStorage.removeItem('auth_token'); localStorage.removeItem('user_data'); window.location.href = '/auth/login'; }} className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50">
                 <LogOut size={16} /> Sign Out
               </a>
             </div>

@@ -29,6 +29,9 @@ interface Appointment {
 }
 
 
+// API configuration
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+
 // --- Reusable Paystack Button using the custom hook ---
 const PaystackScheduleButton = ({ userEmail, userName }: { userEmail: string; userName: string; }) => {
     const router = useRouter();
@@ -39,7 +42,7 @@ const PaystackScheduleButton = ({ userEmail, userName }: { userEmail: string; us
     const verifyPaymentOnBackend = useCallback(async (reference: string) => {
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch('/api/v1/payments/verify', {
+            const response = await fetch(`${apiBaseUrl}/api/v1/payments/verify`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -140,7 +143,7 @@ export default function PatientDashboardPage() {
         return;
       }
       try {
-        const userResponse = await fetch('/api/v1/users/me', {
+        const userResponse = await fetch(`${apiBaseUrl}/api/v1/users/me`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (!userResponse.ok) { throw new Error('Failed to fetch user profile'); }
@@ -183,7 +186,7 @@ export default function PatientDashboardPage() {
               <Link href="/dashboard/profile" className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50"><User size={16} /> My Profile</Link>
               <Link href="/dashboard/settings" className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50"><Settings size={16} /> Settings</Link>
               <div className="border-t my-1"></div>
-              <a href="/api/v1/auth/logout" className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50"><LogOut size={16} /> Sign Out</a>
+              <a href="#" onClick={() => { localStorage.removeItem('auth_token'); localStorage.removeItem('user_data'); window.location.href = '/auth/login'; }} className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50"><LogOut size={16} /> Sign Out</a>
             </div>
           </div>
         </div>

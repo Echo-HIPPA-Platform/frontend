@@ -30,6 +30,9 @@ interface UserResponse {
   };
 }
 
+// API configuration
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+
 export default function BookAppointmentPage() {
   const router = useRouter();
   const [user, setUser] = useState<UserResponse | null>(null);
@@ -110,7 +113,7 @@ export default function BookAppointmentPage() {
       }
 
       try {
-        const userResponse = await fetch('/api/v1/users/me', {
+        const userResponse = await fetch(`${apiBaseUrl}/api/v1/users/me`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
         if (!userResponse.ok) throw new Error('Failed to fetch user profile');
@@ -145,7 +148,7 @@ export default function BookAppointmentPage() {
   const verifyPaymentOnBackend = useCallback(async (reference: string) => {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/v1/payments/verify', {
+      const response = await fetch(`${apiBaseUrl}/api/v1/payments/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
