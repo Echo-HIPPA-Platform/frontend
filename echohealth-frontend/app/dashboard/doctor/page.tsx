@@ -57,7 +57,7 @@ interface DashboardStats {
 
 // API configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
-const apiBaseUrl = API_BASE_URL + '/api/v1';
+const apiBaseUrl = API_BASE_URL;
 
 // API utility functions
 const getAuthToken = () => {
@@ -69,7 +69,7 @@ const getAuthToken = () => {
 
 const apiRequest = async (endpoint: string, options: RequestInit = {}) => {
   const token = getAuthToken();
-  const url = `${apiBaseUrl}${endpoint}`;
+  const url = `${apiBaseUrl}/api/v1${endpoint}`;
   
   const config: RequestInit = {
     ...options,
@@ -102,12 +102,12 @@ export default function DoctorDashboardPage() {
         setError(null);
 
         // Fetch doctor profile
-        const doctorData = await apiRequest(`${apiBaseUrl}/users/me`);
+const doctorData = await apiRequest('/users/me');
         setDoctor(doctorData);
 
         // Fetch appointments (you'll need to implement this endpoint in your backend)
         try {
-          const appointmentsData = await apiRequest(`${apiBaseUrl}/users/me`);
+const appointmentsData = await apiRequest('/appointments');
           setAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
         } catch (err) {
           console.warn('Appointments endpoint not available yet, using empty array');
@@ -116,7 +116,7 @@ export default function DoctorDashboardPage() {
 
         // Fetch availability from the new backend endpoint
         try {
-          const availabilityData = await apiRequest(`${apiBaseUrl}/doctors/me/availability`);
+const availabilityData = await apiRequest('/doctors/me/availability');
           setAvailability(availabilityData);
         } catch (err) {
           console.error('Failed to fetch availability:', err);
@@ -125,7 +125,7 @@ export default function DoctorDashboardPage() {
 
         // Fetch current KYC status
         try {
-          const kycData = await apiRequest(`${apiBaseUrl}/doctors/me/kyc-status`);
+const kycData = await apiRequest('/doctors/me/kyc-status');
           if (kycData && kycData.kyc_status) {
             setKycStatus(kycData.kyc_status);
           }

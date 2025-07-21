@@ -31,8 +31,10 @@ const nextConfig: NextConfig = {
       "http://localhost:8080",
       "http://20.185.56.164:8080",           // Added: Your Azure server IP
       "https://20.185.56.164:8080",          // Added: HTTPS version just in case
-      "http://echopsychology.com:8080",      // Added: Your domain
-      "https://echopsychology.com:8080"      // Added: HTTPS version
+      "http://echopsychology.com:8080",      // Added: Your domain with port
+      "https://echopsychology.com:8080",     // Added: HTTPS version with port
+      "https://echopsychology.com",          // Added: Main domain
+      "http://echopsychology.com"            // Added: HTTP version of main domain
     ].join(' ');
     
     // Define the frame source to allow Paystack checkout iframe
@@ -42,11 +44,11 @@ const nextConfig: NextConfig = {
     const cspValue = [
       "default-src 'self'",
       scriptSrc,
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: https:",
       connectSrc,
       frameSrc,
-      "font-src 'self'",
+      "font-src 'self' https://fonts.googleapis.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
