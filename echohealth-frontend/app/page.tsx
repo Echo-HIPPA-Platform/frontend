@@ -125,13 +125,13 @@ export default function Home() {
                   At Echo Psychology, we create a warm, secure environment where you can explore your thoughts and emotions. Our compassionate team of licensed professionals guides you with personalized care.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 mb-8 justify-center lg:justify-start">
-                  <button className="group bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-8 py-4 rounded-full font-semibold text-lg hover:from-emerald-600 hover:to-teal-600 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                  <Link href="/auth/login" className="group bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-8 py-4 rounded-full font-semibold text-lg hover:from-emerald-600 hover:to-teal-600 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
                     Schedule Session
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                  <button className="bg-white text-slate-700 px-8 py-4 rounded-full font-semibold text-lg border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all duration-300">
+                  </Link>
+                  <a href="#services" className="bg-white text-slate-700 px-8 py-4 rounded-full font-semibold text-lg border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition-all duration-300 inline-flex items-center justify-center">
                     Learn More
-                  </button>
+                  </a>
                 </div>
                 <div className="flex flex-col items-center sm:flex-row sm:justify-center lg:justify-start gap-4 sm:gap-8 text-sm text-slate-500">
                   <div className="flex items-center gap-2"><CheckCircle className="w-5 h-5 text-emerald-500" /> Licensed Professionals</div>
@@ -235,14 +235,14 @@ export default function Home() {
               Your well-being is our priority. Take the first step towards improved mental health today. We're here to support you every step of the way.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-white text-emerald-600 px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-50 transition-all duration-300 shadow-lg">
+              <Link href="/auth/login" className="bg-white text-emerald-600 px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-50 transition-all duration-300 shadow-lg inline-flex items-center justify-center">
                 <Calendar className="w-5 h-5 inline mr-2" />
                 Book Your Appointment
-              </button>
-              <button className="border-2 border-white text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-white hover:text-emerald-600 transition-all duration-300">
+              </Link>
+              <a href="tel:+254747107807" className="border-2 border-white text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-white hover:text-emerald-600 transition-all duration-300 inline-flex items-center justify-center">
                 <Phone className="w-5 h-5 inline mr-2" />
                 Call Us Today
-              </button>
+              </a>
             </div>
           </div>
         </section>
