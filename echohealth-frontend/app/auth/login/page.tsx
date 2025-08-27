@@ -163,6 +163,15 @@ export default function LoginPage() {
               </div>
             </div>
 
+            <div className="flex justify-end">
+              <Link 
+                href="/auth/forgot-password" 
+                className="text-sm text-emerald-600 hover:text-emerald-700 font-medium hover:underline transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
             <button
               type="submit"
               className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-3 rounded-full font-semibold text-lg hover:from-emerald-600 hover:to-teal-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
@@ -171,7 +180,7 @@ export default function LoginPage() {
               {isLoading ? 'Signing In...' : 'Sign In'}
             </button>
             
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center space-y-4">
               <p className="text-slate-600">
                 Don't have an account?{' '}
                 <Link 
