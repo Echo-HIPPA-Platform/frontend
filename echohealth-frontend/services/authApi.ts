@@ -41,7 +41,25 @@ class AuthApiService {
   }
 
   private async handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
-    const data = await response.json();
+    let data;
+    
+    try {
+      const text = await response.text();
+      if (!text.trim()) {
+        data = {};
+      } else {
+        data = JSON.parse(text);
+      }
+    } catch (error) {
+      // If we can't parse JSON, likely got HTML error page
+      if (response.status === 502) {
+        throw new Error('Backend server is not available. Please check if the server is running.');
+      } else if (response.status >= 500) {
+        throw new Error(`Server error (${response.status}). Please try again later.`);
+      } else {
+        throw new Error(`Invalid response from server (${response.status})`);
+      }
+    }
     
     if (!response.ok) {
       throw new Error(data.message || data.error || `HTTP error! status: ${response.status}`);
