@@ -1,0 +1,51 @@
+#!/bin/bash
+
+echo "🔍 Frontend API Configuration Fix"
+echo "================================="
+echo ""
+
+# Get current configuration
+echo "📋 Current API configuration:"
+echo ""
+echo "1. .env file:"
+cat .env | grep "NEXT_PUBLIC_API_BASE_URL"
+echo ""
+echo "2. .env.production file:"
+cat .env.production | grep "NEXT_PUBLIC_API_BASE_URL"
+echo ""
+echo "3. Next.js config rewrites:"
+grep -A 5 "destination:" next.config.ts
+echo ""
+
+echo "🚨 PROBLEM IDENTIFIED:"
+echo "The frontend is trying to connect to old Azure server IPs:"
+echo "  • 172.178.123.45:8080 (from .env)"
+echo "  • 20.185.56.164:8080 (from .env.production)"
+echo ""
+echo "But your backend is running on your current Azure server."
+echo ""
+
+echo "🔧 TO FIX THIS:"
+echo "1. First, get your current Azure server IP by running this on your Azure server:"
+echo "   curl ifconfig.me"
+echo ""
+echo "2. Then update the environment files with the correct IP:"
+echo ""
+echo "For .env.production, run:"
+echo "   sed -i '' 's/20.185.56.164/YOUR-AZURE-IP/g' .env.production"
+echo ""
+echo "For next.config.ts, run:"
+echo "   sed -i '' 's/20.185.56.164/YOUR-AZURE-IP/g' next.config.ts"
+echo ""
+echo "3. Replace YOUR-AZURE-IP with the actual IP from step 1"
+echo ""
+echo "4. Rebuild and redeploy your frontend:"
+echo "   npm run build"
+echo ""
+
+echo "💡 QUICK TEST:"
+echo "You can test if the API is reachable by running:"
+echo "   curl http://YOUR-AZURE-IP:8080/health"
+echo ""
+echo "This should return a JSON response with:"
+echo '   {"service": "mental-health-platform", "status": "healthy", ...}'
