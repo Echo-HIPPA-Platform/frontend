@@ -34,7 +34,9 @@ const nextConfig: NextConfig = {
       "http://echopsychology.com:8080",      // Added: Your domain with port
       "https://echopsychology.com:8080",     // Added: HTTPS version with port
       "https://echopsychology.com",          // Added: Main domain
-      "http://echopsychology.com"            // Added: HTTP version of main domain
+      "http://echopsychology.com",
+      " http://localhost:8081",
+      "https://staging.echopsychology.com"          // Added: HTTP version of main domain
     ].join(' ');
     
     // Define the frame source to allow Paystack checkout iframe
