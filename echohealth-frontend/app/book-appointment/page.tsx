@@ -41,6 +41,10 @@ export default function BookAppointmentPage() {
   const [selectedTime, setSelectedTime] = useState('');
   const [selectedType, setSelectedType] = useState<'online' | 'in-person'>('online');
   const [notes, setNotes] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{code: string, discount: number} | null>(null);
+  const [couponError, setCouponError] = useState('');
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -190,12 +194,102 @@ export default function BookAppointmentPage() {
     console.log('Payment popup closed by user.');
   }, []);
 
-  const handleBookAppointment = useCallback(() => {
+  const validateCoupon = useCallback(async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Please enter a coupon code');
+      return;
+    }
+
+    setIsValidatingCoupon(true);
+    setCouponError('');
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${apiBaseUrl}/api/v1/coupons/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ code: couponCode.trim() })
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.valid) {
+        setAppliedCoupon({
+          code: couponCode.trim(),
+          discount: result.discount
+        });
+        setCouponError('');
+      } else {
+        setCouponError(result.error || 'Invalid coupon code');
+        setAppliedCoupon(null);
+      }
+    } catch (error) {
+      setCouponError('Failed to validate coupon code');
+      setAppliedCoupon(null);
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  }, [couponCode]);
+
+  const removeCoupon = useCallback(() => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponError('');
+  }, []);
+
+  const handleBookAppointment = useCallback(async () => {
     if (!selectedDate || !selectedTime || !user || !selectedDoctor) {
       alert('Please fill in all required fields.');
       return;
     }
 
+    // Calculate final amount after coupon discount
+    const originalAmount = 200000; // 2000 KES in kobo
+    const discountAmount = appliedCoupon ? (originalAmount * appliedCoupon.discount / 100) : 0;
+    const finalAmount = originalAmount - discountAmount;
+
+    // If 100% discount, bypass payment and create appointment directly
+    if (appliedCoupon && appliedCoupon.discount === 100) {
+      try {
+        setIsProcessingPayment(true);
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${apiBaseUrl}/api/v1/appointments/create-free`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            doctor_id: selectedDoctor.id,
+            appointment_date: selectedDate,
+            appointment_time: selectedTime,
+            appointment_type: selectedType,
+            notes: notes,
+            coupon_code: appliedCoupon.code
+          })
+        });
+
+        if (response.ok) {
+          alert(`Appointment booked successfully with ${selectedDoctor?.profile.first_name} ${selectedDoctor?.profile.last_name} for ${selectedDate} at ${selectedTime}. No payment required!`);
+          localStorage.removeItem('selected_doctor_id');
+          router.push('/dashboard/patient');
+        } else {
+          const error = await response.json();
+          alert(error.error || 'Failed to create appointment');
+        }
+      } catch (error) {
+        console.error('Appointment creation error:', error);
+        alert('Failed to create appointment. Please try again.');
+      } finally {
+        setIsProcessingPayment(false);
+      }
+      return;
+    }
+
+    // Regular payment flow
     const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
     if (!publicKey) {
       alert('Payment configuration error. Please contact support.');
@@ -205,7 +299,7 @@ export default function BookAppointmentPage() {
     initializePayment({
       publicKey: publicKey,
       email: user.email,
-      amount: 200000, // 2000 KES in kobo
+      amount: finalAmount,
       currency: 'KES',
       reference: 'echo_' + Math.floor((Math.random() * 1000000000) + 1),
       metadata: {
@@ -214,12 +308,15 @@ export default function BookAppointmentPage() {
         appointment_date: selectedDate,
         appointment_time: selectedTime,
         appointment_type: selectedType,
-        purpose: 'Appointment Booking'
+        purpose: 'Appointment Booking',
+        coupon_code: appliedCoupon?.code || '',
+        original_amount: originalAmount,
+        discount_amount: discountAmount
       },
       onSuccess: handlePaymentSuccess,
       onClose: handlePaymentClose,
     });
-  }, [user, selectedDoctor, selectedDate, selectedTime, selectedType, initializePayment, handlePaymentSuccess, handlePaymentClose]);
+  }, [user, selectedDoctor, selectedDate, selectedTime, selectedType, notes, appliedCoupon, initializePayment, handlePaymentSuccess, handlePaymentClose, router]);
 
   if (isLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -394,7 +491,61 @@ export default function BookAppointmentPage() {
                       <span className="text-slate-600">Consultation Fee</span>
                       <span className="text-2xl font-bold text-slate-800">KES 2,000</span>
                     </div>
-                    <div className="text-sm text-slate-500 mb-4">
+
+                    {/* Coupon Code */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Coupon Code</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value)}
+                          placeholder="Enter coupon code"
+                          className="flex-1 p-3 rounded-xl border border-slate-200 focus:border-emerald-300 focus:ring focus:ring-emerald-200 focus:ring-opacity-50 transition-colors"
+                          disabled={!!appliedCoupon || isValidatingCoupon}
+                        />
+                        {appliedCoupon ? (
+                          <button
+                            onClick={removeCoupon}
+                            className="px-4 py-3 rounded-xl border-2 border-red-200 text-red-600 font-semibold hover:bg-red-50"
+                          >
+                            Remove
+                          </button>
+                        ) : (
+                          <button
+                            onClick={validateCoupon}
+                            disabled={isValidatingCoupon || !couponCode.trim()}
+                            className="px-4 py-3 rounded-xl bg-emerald-500 text-white font-semibold hover:bg-emerald-600 disabled:opacity-50"
+                          >
+                            {isValidatingCoupon ? 'Validating...' : 'Apply'}
+                          </button>
+                        )}
+                      </div>
+                      {couponError && (
+                        <p className="text-sm text-red-600 mt-2">{couponError}</p>
+                      )}
+                      {appliedCoupon && (
+                        <p className="text-sm text-emerald-700 mt-2">Coupon applied: {appliedCoupon.code} ({appliedCoupon.discount}% off)</p>
+                      )}
+                    </div>
+
+                    {/* Summary */}
+                    <div className="space-y-2 text-slate-700">
+                      <div className="flex items-center justify-between">
+                        <span>Subtotal</span>
+                        <span>KES 2,000</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Discount</span>
+                        <span>{appliedCoupon ? `${appliedCoupon.discount}%` : '—'}</span>
+                      </div>
+                      <div className="border-t pt-2 flex items-center justify-between font-semibold">
+                        <span>Total</span>
+                        <span>{appliedCoupon && appliedCoupon.discount === 100 ? 'KES 0' : 'KES ' + (2000 - Math.round(2000 * (appliedCoupon?.discount || 0) / 100))}</span>
+                      </div>
+                    </div>
+
+                    <div className="text-sm text-slate-500 mt-4">
                       • 50-minute session
                       • {selectedType === 'online' ? 'Secure video call' : 'In-person consultation'}
                       • Professional mental health support
