@@ -307,8 +307,6 @@ export default function AdminDashboardPage() {
     }
   };
 
-
-
   const handleUserStatusToggle = async (userId: number, currentStatus: boolean) => {
     const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
     const newStatus = !currentStatus;
@@ -516,7 +514,7 @@ export default function AdminDashboardPage() {
                             )}
                             
                             {/* Doctor Verification Actions */}
-                            {doctor.verification_status === 'pending' && (
+                            {doctor.verification_status === 'pending' && doctor.kyc_status === 'approved' && (
                               <>
                                 <button onClick={() => handleDoctorVerification(doctor.id, 'approved')} className="p-2 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200" title="Approve Doctor">
                                   <UserCheck size={16} />
@@ -609,7 +607,7 @@ export default function AdminDashboardPage() {
                                                     )}
                                                     
                                                     {/* Doctor Verification Actions */}
-                                                    {doctorProfile.verification_status === 'pending' && (
+                                                    {doctorProfile.verification_status === 'pending' && doctorProfile.kyc_status === 'approved' && (
                                                         <>
                                                             <button onClick={() => handleDoctorVerification(doctorProfile.id, 'approved')} className="p-2 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200" title="Approve Doctor">
                                                                 <UserCheck size={16} />
@@ -715,7 +713,7 @@ export default function AdminDashboardPage() {
                               )}
                               
                               {/* Doctor Verification Actions */}
-                              {doctor.verification_status === 'pending' && (
+                              {doctor.verification_status === 'pending' && doctor.kyc_status === 'approved' && (
                                 <>
                                   <button onClick={() => handleDoctorVerification(doctor.id, 'approved')} className="p-2 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200" title="Approve Doctor">
                                     <UserCheck size={16} />

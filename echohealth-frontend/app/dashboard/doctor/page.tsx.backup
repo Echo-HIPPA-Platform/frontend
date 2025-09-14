@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Heart, User, LogOut, Settings, Calendar, Clock, ArrowRight, BriefcaseMedical, Edit3, UserCheck, AlertCircle, X } from 'lucide-react';
+import { Heart, User, LogOut, Settings, Calendar, Clock, ArrowRight, BriefcaseMedical, Edit3, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 import KYCVerification from '@/app/components/KYCVerification';
 
@@ -93,8 +93,7 @@ export default function DoctorDashboardPage() {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
-  const [kycStatus, setKycStatus] = useState<"pending" | "approved" | "rejected" | "incomplete">("incomplete");
+  const [kycStatus, setKycStatus] = useState<'pending' | 'approved' | 'rejected' | 'incomplete'>('incomplete');
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -105,14 +104,6 @@ export default function DoctorDashboardPage() {
         // Fetch doctor profile
 const doctorData = await apiRequest('/users/me');
         setDoctor(doctorData);
-        // Fetch KYC status
-        try {
-          const kycData = await apiRequest("/doctors/me/kyc-status");
-          setKycStatus((kycData.status as "pending" | "approved" | "rejected" | "incomplete") || "incomplete");
-        } catch (err) {
-          console.warn("KYC status endpoint not available, using default");
-          setKycStatus("incomplete");
-        }
 
         // Fetch appointments (you'll need to implement this endpoint in your backend)
         try {
@@ -165,19 +156,6 @@ const kycData = await apiRequest('/doctors/me/kyc-status');
     };
 
     fetchDashboardData();
-  }, []);
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
-      const dropdown = document.querySelector('.dropdown-container');
-      if (dropdown && !dropdown.contains(target)) {
-        setDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleLogout = async () => {
@@ -249,13 +227,13 @@ const kycData = await apiRequest('/doctors/me/kyc-status');
           <h1 className="text-2xl font-bold text-gray-800">Doctor Panel</h1>
         </Link>
         <div className="flex items-center gap-4">
-          <div className="relative dropdown-container">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center cursor-pointer" onClick={() => setDropdownOpen(!dropdownOpen)}>
+          <div className="relative group">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center cursor-pointer">
               <span className="text-white font-bold text-lg">
                 {doctor?.profile.first_name.charAt(0)}
               </span>
             </div>
-            <div className={`absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 transition-opacity duration-200 ${dropdownOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
               <Link href="/dashboard/profile" className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                 <User size={16} /> My Profile
               </Link>
@@ -298,65 +276,6 @@ const kycData = await apiRequest('/doctors/me/kyc-status');
               Here&apos;s what your day and week look like.
             </p>
           </header>
-            {/* KYC Status Banner */}
-            <div className="mt-6">
-              {kycStatus === 'approved' && (
-                <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-md">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <UserCheck className="h-5 w-5 text-green-400" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-green-800">
-                        Your account is verified! You can now accept appointments and provide consultations.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {kycStatus === 'pending' && (
-                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <Clock className="h-5 w-5 text-yellow-400" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-yellow-800">
-                        Your verification is pending review. You'll be notified once approved.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {kycStatus === 'incomplete' && (
-                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-md">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <AlertCircle className="h-5 w-5 text-blue-400" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-blue-800">
-                        Complete your profile verification to start accepting appointments.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {kycStatus === 'rejected' && (
-                <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <X className="h-5 w-5 text-red-400" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-red-800">
-                        Your verification was not approved. Please contact support for more information.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
 
           {/* KYC Verification Section */}
           <KYCVerification 
