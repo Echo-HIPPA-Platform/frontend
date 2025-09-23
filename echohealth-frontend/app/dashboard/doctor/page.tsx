@@ -241,38 +241,58 @@ const kycData = await apiRequest('/doctors/me/kyc-status');
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-gray-100">
       {/* Navigation */}
-      <nav className="relative z-10 flex justify-between items-center px-8 sm:px-20 py-6 bg-white/80 backdrop-blur-sm border-b border-gray-200">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center">
-            <Heart className="w-6 h-6 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-800">Doctor Panel</h1>
+      <nav className="relative z-20 flex justify-between items-center px-8 sm:px-20 py-6 bg-white/80 backdrop-blur-sm border-b border-gray-200">
+  <Link href="/" className="flex items-center gap-3">
+    <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center">
+      <Heart className="w-6 h-6 text-white" />
+    </div>
+    <h1 className="text-2xl font-bold text-gray-800">Doctor Panel</h1>
+  </Link>
+
+  <div className="flex items-center gap-4 relative">
+    <div className="relative">
+      {/* Avatar button */}
+      <div
+        className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center cursor-pointer relative z-30"
+        onClick={() => setDropdownOpen(!dropdownOpen)}
+      >
+        <span className="text-white font-bold text-lg">
+          {doctor?.profile.first_name.charAt(0)}
+        </span>
+      </div>
+
+      {/* Dropdown menu */}
+      <div
+        className={`absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 transform transition-all duration-200 z-50
+        ${dropdownOpen ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}`}
+      >
+        <Link
+          href="/dashboard/profile"
+          className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+        >
+          <User size={16} /> My Profile
         </Link>
-        <div className="flex items-center gap-4">
-          <div className="relative dropdown-container">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center cursor-pointer" onClick={() => setDropdownOpen(!dropdownOpen)}>
-              <span className="text-white font-bold text-lg">
-                {doctor?.profile.first_name.charAt(0)}
-              </span>
-            </div>
-            <div className={`absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 transition-opacity duration-200 ${dropdownOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
-              <Link href="/dashboard/profile" className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                <User size={16} /> My Profile
-              </Link>
-              <Link href="/dashboard/settings" className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                <Settings size={16} /> Settings
-              </Link>
-              <div className="border-t my-1"></div>
-              <button 
-                onClick={handleLogout}
-                className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-              >
-                <LogOut size={16} /> Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+
+        <Link
+          href="/dashboard/settings"
+          className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+        >
+          <Settings size={16} /> Settings
+        </Link>
+
+        <div className="border-t my-1"></div>
+
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+        >
+          <LogOut size={16} /> Sign Out
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>
+
 
       {/* Error Banner */}
       {error && (
@@ -350,7 +370,7 @@ const kycData = await apiRequest('/doctors/me/kyc-status');
                     </div>
                     <div className="ml-3">
                       <p className="text-sm font-medium text-red-800">
-                        Your verification was not approved. Please contact support for more information.
+                        Your verification was not approved. Please contact support support@echopsychology.com for more information.
                       </p>
                     </div>
                   </div>

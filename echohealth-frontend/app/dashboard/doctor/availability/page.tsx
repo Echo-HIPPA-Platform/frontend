@@ -16,7 +16,7 @@ interface AvailabilitySlot {
 }
 
 // API utility functions (re-using from DoctorDashboardPage for consistency)
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api/v1';
 
 const getAuthToken = () => {
   if (typeof window !== 'undefined') {

@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Users, UserCheck, Clock, ShieldCheck, BarChart2, Check, X, UserX, CheckCircle, Ban, ToggleLeft, ToggleRight, Menu, Settings, FileText, Activity } from 'lucide-react';
+import { Users, UserCheck, Clock, ShieldCheck, BarChart2, Check, X, UserX, CheckCircle, Ban, ToggleLeft, ToggleRight, Menu, Settings, FileText, Activity, Ticket } from 'lucide-react';
 import Link from 'next/link';
 import ActivityLogComponent from '../../../components/admin/ActivityLog';
 import ChartsAndReportsComponent from '../../../components/admin/ChartsAndReports';
 import AdminSettingsComponent from '../../../components/admin/Settings';
+import CouponsPage from './coupons/page';
 
 // --- Types based on your Go backend DTOs ---
 interface AdminDashboardStats {
@@ -45,7 +46,29 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'doctors' | 'users'>('doctors');
-  const [activeSection, setActiveSection] = useState('dashboard');
+  const [activeSection, setActiveSection] = useState<'dashboard' | 'verify-doctors' | 'settings' | 'reports' | 'activity' | 'coupons'>('dashboard');
+
+  // Inline specialization edit modal state
+
+  // Inline specialization edit modal state
+  const [isSpecModalOpen, setIsSpecModalOpen] = useState(false);
+  const [specDoctorId, setSpecDoctorId] = useState<number | null>(null);
+  const [specUserId, setSpecUserId] = useState<number | null>(null);
+  const [specInput, setSpecInput] = useState('');
+  const [licenseInput, setLicenseInput] = useState('');
+  const [isSavingSpec, setIsSavingSpec] = useState(false);
+
+  // Helper to build API URLs; prefer relative path to use Next.js rewrites in dev
+  const buildApiUrl = (path: string) => {
+    const raw = process.env.NEXT_PUBLIC_API_BASE_URL?.trim();
+    // If an env is set but points to 8081 (wrong service), ignore it
+    if (raw && !raw.includes('localhost:8080')) {
+      const base = raw.endsWith('/') ? raw.slice(0, -1) : raw;
+      return `${base}${path}`;
+    }
+    // Default: use relative path so Next.js rewrites route to the backend (8080)
+    return path;
+  };
 
   const fetchAdminData = async () => {
     // This function will be re-used to refresh data after updates
@@ -56,14 +79,14 @@ export default function AdminDashboardPage() {
       return;
     }
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
-      console.log('Fetching admin data from:', apiBaseUrl);
+      const resolvedDashboardUrl = buildApiUrl(`/api/v1/admin/dashboard`);
+      console.log('Fetching admin data from:', resolvedDashboardUrl);
       console.log('Using token:', token ? 'Present' : 'Missing');
       
       const [statsRes, doctorsRes, usersRes] = await Promise.all([
-        fetch(`${apiBaseUrl}/api/v1/admin/dashboard`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${apiBaseUrl}/api/v1/admin/doctors`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${apiBaseUrl}/api/v1/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } })
+        fetch(resolvedDashboardUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(buildApiUrl(`/api/v1/admin/doctors`), { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(buildApiUrl(`/api/v1/admin/users`), { headers: { 'Authorization': `Bearer ${token}` } })
       ]);
 
       console.log('Response statuses:', {
@@ -76,6 +99,20 @@ export default function AdminDashboardPage() {
       const statsData = statsRes.ok ? await statsRes.json() : null;
       const doctorsData = doctorsRes.ok ? await doctorsRes.json() : null;
       const usersData = usersRes.ok ? await usersRes.json() : null;
+      
+      // Log error details for debugging
+      if (!statsRes.ok) {
+        const errorText = await statsRes.text();
+        console.error('Stats API error:', statsRes.status, errorText);
+      }
+      if (!doctorsRes.ok) {
+        const errorText = await doctorsRes.text();
+        console.error('Doctors API error:', doctorsRes.status, errorText);
+      }
+      if (!usersRes.ok) {
+        const errorText = await usersRes.text();
+        console.error('Users API error:', usersRes.status, errorText);
+      }
       
       console.log('Fetched data:', { statsData, doctorsData, usersData });
       console.log('Response status details:', {
@@ -99,33 +136,39 @@ export default function AdminDashboardPage() {
         usersArray = usersData.users || usersData || [];
         console.log('Setting users data:', usersArray);
         setUsers(usersArray);
-        
-        // If we have users but no doctors data, create doctor profiles from users with doctor role
-        if ((!doctorsData || doctorsArray.length === 0) && usersArray.length > 0) {
-          const doctorUsers = usersArray.filter(user => user.role === 'doctor');
-          console.log('Found doctor users without doctor profiles:', doctorUsers);
-          
-          // Create mock doctor profiles for users with doctor role
-          const mockDoctorProfiles = doctorUsers.map(user => ({
-            id: user.id, // Use user ID as doctor profile ID for now
-            user: user,
-            specialization: 'Not specified', // Default specialization
-            verification_status: 'pending' as const,
-            kyc_status: 'incomplete' as const,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }));
-          
-          console.log('Created mock doctor profiles:', mockDoctorProfiles);
-          doctorsArray = mockDoctorProfiles;
-        }
       }
+
+      // Ensure all users with role Doctor appear in the doctors list
+      // 1) Build a map of existing doctor profiles by user.id (when available)
+      const doctorByUserId = new Map<number, DoctorResponse>();
+      for (const d of doctorsArray) {
+        const uid = d?.user?.id;
+        if (typeof uid === 'number') doctorByUserId.set(uid, d);
+      }
+      // 2) Create entries for every user with role doctor, using existing profile if present, else placeholder
+      const normalizedDoctorUsers = (usersArray || []).filter(u => (u.role || '').toLowerCase() === 'doctor');
+      const synthesizedFromUsers: DoctorResponse[] = normalizedDoctorUsers.map(user => {
+        const existing = doctorByUserId.get(user.id);
+        if (existing) return existing;
+        return {
+          id: user.id, // fall back to user id if profile id is missing
+          user,
+          specialization: 'Not specified',
+          verification_status: 'pending',
+          kyc_status: 'incomplete',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        } as DoctorResponse;
+      });
+      // 3) Include any doctor profiles that don't have a matching user (edge case)
+      const orphanDoctorProfiles = doctorsArray.filter(d => !doctorByUserId.has(d?.user?.id || -1));
+      const mergedDoctors = [...synthesizedFromUsers, ...orphanDoctorProfiles];
+
+      setDoctors(mergedDoctors);
       
-      setDoctors(doctorsArray);
-      
-      // Only throw error if critical endpoints fail
-      if (!usersRes.ok) {
-        throw new Error(`Failed to fetch users data. Status: ${usersRes.status}`);
+      // Only throw error if critical endpoints fail - but be more lenient for now
+      if (!usersRes.ok && !doctorsRes.ok) {
+        throw new Error(`Failed to fetch critical data. Users: ${usersRes.status}, Doctors: ${doctorsRes.status}`);
       }
 
     } catch (err: any) {
@@ -255,6 +298,14 @@ export default function AdminDashboardPage() {
   }, []);
 
   const handleDoctorVerification = async (doctorId: number, action: 'approved' | 'rejected' | 'suspended') => {
+    // Prevent calling backend for synthesized doctors that don't have real profiles
+    const targetDoctor = doctors.find(d => d.id === doctorId);
+    // We treat presence of a real profile by requiring a non-empty specialization and an ID
+    // Without backend profile fields we skip verify to avoid 404
+    if (!targetDoctor || !targetDoctor.specialization || targetDoctor.specialization === 'Not specified') {
+      alert('This doctor does not have a completed backend profile yet. Please ensure a Doctor Profile exists before verification.');
+      return;
+    }
     const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
     let reason = '';
     if (action === 'rejected' || action === 'suspended') {
@@ -265,8 +316,7 @@ export default function AdminDashboardPage() {
         }
     }
     try {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
-        const response = await fetch(`${apiBaseUrl}/api/v1/admin/doctors/${doctorId}/verify`, {
+        const response = await fetch(buildApiUrl(`/api/v1/admin/doctors/${doctorId}/verify`), {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
             body: JSON.stringify({ action, reason }),
@@ -307,6 +357,63 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Create or update specialization for a doctor (admin-set)
+  const openSpecializationModal = (doctor: DoctorResponse) => {
+    setSpecDoctorId(doctor.id);
+    setSpecUserId(doctor.user?.id ?? null);
+    setSpecInput(doctor.specialization || '');
+    // If license number doesn't exist on merged entry, leave empty
+    // @ts-ignore - optional field depending on real profile
+    setLicenseInput((doctor.license_number as string) || '');
+    setIsSpecModalOpen(true);
+  };
+
+  const saveSpecialization = async () => {
+    if (!specDoctorId || !specUserId) {
+      alert('Missing doctor or user identifier.');
+      return;
+    }
+    if (!specInput.trim()) {
+      alert('Please enter a specialization.');
+      return;
+    }
+    setIsSavingSpec(true);
+    try {
+      const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+      // Try update existing doctor profile first
+      const updateRes = await fetch(buildApiUrl(`/api/v1/admin/doctors/${specDoctorId}`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ specialization: specInput.trim(), license_number: licenseInput.trim() || undefined })
+      });
+
+      if (updateRes.ok) {
+        await fetchAdminData();
+        setIsSpecModalOpen(false);
+        return;
+      }
+
+      // If update not found, try create profile for this user
+      const createRes = await fetch(buildApiUrl(`/api/v1/admin/doctors`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ user_id: specUserId, specialization: specInput.trim(), license_number: licenseInput.trim() })
+      });
+
+      if (!createRes.ok) {
+        const msg = await createRes.text();
+        throw new Error(msg || 'Failed to create doctor profile');
+      }
+
+      await fetchAdminData();
+      setIsSpecModalOpen(false);
+    } catch (e: any) {
+      alert(e.message || 'Failed to save specialization');
+    } finally {
+      setIsSavingSpec(false);
+    }
+  };
+
 
 
   const handleUserStatusToggle = async (userId: number, currentStatus: boolean) => {
@@ -315,7 +422,7 @@ export default function AdminDashboardPage() {
     if (!confirm(`Are you sure you want to ${newStatus ? 'activate' : 'deactivate'} this user account?`)) return;
 
     try {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+        const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8081';
         const response = await fetch(`${apiBaseUrl}/api/v1/admin/users/${userId}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
@@ -331,7 +438,24 @@ export default function AdminDashboardPage() {
   
   // Helper components remain the same
   const StatCard = ({ title, value, icon: Icon }: { title: string; value: number | string; icon: React.ElementType }) => ( <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 border border-slate-200 shadow-md"> <div className="flex items-center gap-4"> <div className="p-3 bg-emerald-100 rounded-full"><Icon className="w-6 h-6 text-emerald-600" /></div> <div> <p className="text-sm font-medium text-slate-500">{title}</p> <p className="text-2xl font-bold text-gray-900">{value}</p> </div> </div> </div> );
-  const StatusBadge = ({ status }: { status: string }) => { const statusMap: { [key: string]: string } = { pending: 'bg-yellow-100 text-yellow-800', approved: 'bg-green-100 text-green-800', rejected: 'bg-red-100 text-red-800', suspended: 'bg-slate-100 text-slate-800', }; return ( <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusMap[status] || 'bg-gray-100 text-gray-800'}`}>{status.charAt(0).toUpperCase() + status.slice(1)}</span> ); };
+  const StatusBadge = ({ status }: { status: string | undefined | null }) => { 
+    if (!status) {
+      return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Unknown</span>;
+    }
+    
+    const statusMap: { [key: string]: string } = { 
+      pending: 'bg-yellow-100 text-yellow-800', 
+      approved: 'bg-green-100 text-green-800', 
+      rejected: 'bg-red-100 text-red-800', 
+      suspended: 'bg-slate-100 text-slate-800', 
+    }; 
+    
+    return ( 
+      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusMap[status] || 'bg-gray-100 text-gray-800'}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span> 
+    ); 
+  };
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-gray-100">Loading Admin Dashboard...</div>;
   if (error) return <div className="min-h-screen flex items-center justify-center bg-red-100 text-red-700 p-8">{error}</div>;
@@ -419,6 +543,19 @@ export default function AdminDashboardPage() {
                   Activity Log
                 </button>
               </li>
+              <li>
+                <button
+                  onClick={() => setActiveSection('coupons')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                    activeSection === 'coupons'
+                      ? 'bg-emerald-100 text-emerald-700 font-medium'
+                      : 'text-slate-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                >
+                  <Ticket className="w-5 h-5" />
+                  Coupons
+                </button>
+              </li>
             </ul>
           </nav>
           
@@ -476,14 +613,33 @@ export default function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {doctors.filter(doctor => doctor.user.role === 'doctor').map(doctor => (
+                    {doctors
+                      .filter(doctor => ((doctor.user?.role || '').toLowerCase() === 'doctor'))
+                      .map(doctor => {
+                        const firstName = doctor.user?.profile?.first_name || 'N/A';
+                        const lastName = doctor.user?.profile?.last_name || '';
+                        const email = doctor.user?.email || 'N/A';
+                        const specialization = doctor.specialization || 'Not specified';
+                        const joined = doctor.created_at ? new Date(doctor.created_at).toLocaleDateString() : '-';
+                        return (
                       <tr key={doctor.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {doctor.user.profile.first_name} {doctor.user.profile.last_name}
+                          {firstName} {lastName}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                          <div>{doctor.user.email}</div>
-                          <div className="text-slate-500">{doctor.specialization}</div>
+                          <div>{email}</div>
+                          <div className="text-slate-500 flex items-center gap-2">
+                            <span>{specialization}</span>
+                            {(!doctor.specialization || doctor.specialization === 'Not specified') && (
+                              <button
+                                onClick={() => openSpecializationModal(doctor)}
+                                className="text-xs px-2 py-1 rounded-md bg-amber-100 text-amber-700 hover:bg-amber-200"
+                                title="Set specialization"
+                              >
+                                Set
+                              </button>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
                           <StatusBadge status={doctor.verification_status} />
@@ -499,7 +655,7 @@ export default function AdminDashboardPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                          {new Date(doctor.created_at).toLocaleDateString()}
+                          {joined}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
                           <div className="flex justify-end items-center gap-2">
@@ -541,9 +697,33 @@ export default function AdminDashboardPage() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                        );
+                      })}
                   </tbody>
                 </table>
+              )}
+              {isSpecModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+                  <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                    <h3 className="text-lg font-semibold mb-4">Set Doctor Specialization</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm text-slate-600 mb-1">Specialization</label>
+                        <input value={specInput} onChange={e => setSpecInput(e.target.value)} className="w-full border rounded-md px-3 py-2" placeholder="e.g., Clinical Psychology" />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-slate-600 mb-1">License Number (optional)</label>
+                        <input value={licenseInput} onChange={e => setLicenseInput(e.target.value)} className="w-full border rounded-md px-3 py-2" placeholder="e.g., LIC-123456" />
+                      </div>
+                    </div>
+                    <div className="mt-6 flex justify-end gap-2">
+                      <button onClick={() => setIsSpecModalOpen(false)} className="px-4 py-2 rounded-md bg-slate-100 text-slate-700 hover:bg-slate-200">Cancel</button>
+                      <button onClick={saveSpecialization} disabled={isSavingSpec} className="px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60">
+                        {isSavingSpec ? 'Saving...' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {activeTab === 'users' && (
@@ -767,6 +947,11 @@ export default function AdminDashboardPage() {
               </header>
               <ActivityLogComponent />
             </>
+          )}
+
+          {/* Coupons Section */}
+          {activeSection === 'coupons' && (
+            <CouponsPage />
           )}
         </div>
       </main>
