@@ -30,14 +30,12 @@ export default function LoginPage() {
     setError(null);
 
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
-    console.log('Login attempt with API base URL:', apiBaseUrl);
 
     try {
       const loginData = {
         email: formData.email.trim().toLowerCase(),
         password: formData.password
       };
-      console.log('Sending login request with email:', loginData.email);
 
       const response = await fetch(`${apiBaseUrl}/api/v1/auth/login`, {
         method: 'POST',
@@ -45,52 +43,43 @@ export default function LoginPage() {
         body: JSON.stringify(loginData)
       });
 
-      console.log('Response status:', response.status);
       const data = await response.json();
-      console.log('Response data:', { ...data, token: data.token ? '[REDACTED]' : 'none' });
 
       if (!response.ok) {
-        throw new Error(data.message || data.error || 'Login failed.');
+        throw new Error(data.message || data.error || 'Invalid email or password. Please try again.');
       }
 
       // Store authentication data
-      if (data.token) {
-        localStorage.setItem('auth_token', data.token);
-        console.log('Token stored successfully');
-      }
-      if (data.user) {
-        localStorage.setItem('user_data', JSON.stringify(data.user));
-        console.log('User data stored:', data.user);
+      if (!data.token || !data.user) {
+        throw new Error('Invalid response from server. Please try again.');
       }
 
+      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('user_data', JSON.stringify(data.user));
+
       const role = data.user?.role;
-      console.log('User role:', role);
 
       // Small delay to ensure localStorage is set
       await new Promise(resolve => setTimeout(resolve, 100));
 
+      // Redirect based on role
       switch (role) {
         case 'doctor':
-          console.log('Redirecting to doctor dashboard');
           router.push('/dashboard/doctor');
           break;
         case 'patient':
-          console.log('Redirecting to patient dashboard');
           router.push('/dashboard/patient');
           break;
         case 'admin':
-          console.log('Redirecting to admin dashboard');
           router.push('/dashboard/admin');
           break;
         default:
-          console.log('Redirecting to default dashboard');
           router.push('/dashboard');
           break;
       }
 
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'Login failed.');
+      setError(err instanceof Error ? err.message : 'Unable to connect to the server. Please check your internet connection and try again.');
     } finally {
       setIsLoading(false);
     }

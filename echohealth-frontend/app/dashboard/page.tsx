@@ -8,16 +8,10 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    console.log('Dashboard page loading...');
     const userData = localStorage.getItem('user_data');
     const token = localStorage.getItem('auth_token');
     
-    console.log('Auth check - userData:', userData ? 'exists' : 'missing');
-    console.log('Auth check - token:', token ? 'exists' : 'missing');
-    
     if (!userData || !token) {
-      console.log('Missing auth data, redirecting to login');
-      // If no user data or token, redirect to login
       router.push('/auth/login');
       return;
     }
@@ -25,25 +19,19 @@ export default function DashboardPage() {
     try {
       const user = JSON.parse(userData);
       const role = user.role;
-      console.log('User role found:', role);
-      console.log('User data:', user);
 
       // Redirect to appropriate dashboard based on role
       switch (role) {
         case 'doctor':
-          console.log('Redirecting to doctor dashboard');
           router.push('/dashboard/doctor');
           break;
         case 'patient':
-          console.log('Redirecting to patient dashboard');
           router.push('/dashboard/patient');
           break;
         case 'admin':
-          console.log('Redirecting to admin dashboard');
           router.push('/dashboard/admin');
           break;
         default:
-          console.log('Unknown role, redirecting to patient dashboard as default');
           // If role is not recognized, redirect to patient dashboard as default
           router.push('/dashboard/patient');
           break;

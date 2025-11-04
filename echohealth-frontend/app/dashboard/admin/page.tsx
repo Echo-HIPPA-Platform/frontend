@@ -78,50 +78,86 @@ export default function AdminDashboardPage() {
       window.location.href = '/auth/login';
       return;
     }
+    
+    // Add timeout to the fetch requests
+    const fetchWithTimeout = async (url: string, options: RequestInit, timeout = 5000) => {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
+      try {
+        const response = await fetch(url, {
+          ...options,
+          signal: controller.signal
+        });
+        clearTimeout(id);
+        return response;
+      } catch (error) {
+        clearTimeout(id);
+        throw error;
+      }
+    };
     try {
       const resolvedDashboardUrl = buildApiUrl(`/api/v1/admin/dashboard`);
-      console.log('Fetching admin data from:', resolvedDashboardUrl);
-      console.log('Using token:', token ? 'Present' : 'Missing');
       
-      const [statsRes, doctorsRes, usersRes] = await Promise.all([
-        fetch(resolvedDashboardUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(buildApiUrl(`/api/v1/admin/doctors`), { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(buildApiUrl(`/api/v1/admin/users`), { headers: { 'Authorization': `Bearer ${token}` } })
-      ]);
-
-      console.log('Response statuses:', {
-        stats: statsRes.status,
-        doctors: doctorsRes.status,
-        users: usersRes.status
-      });
+      let statsRes, doctorsRes, usersRes;
+      
+      try {
+        [statsRes, doctorsRes, usersRes] = await Promise.all([
+          fetchWithTimeout(resolvedDashboardUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetchWithTimeout(buildApiUrl(`/api/v1/admin/doctors`), { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetchWithTimeout(buildApiUrl(`/api/v1/admin/users`), { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+      } catch (error) {
+        setError(
+          'Unable to connect to the server. Please verify that:\n' +
+          '1. The backend server is running\n' +
+          '2. You have a working internet connection\n' +
+          '3. The API URL is correctly configured'
+        );
+        // Load mock data for development
+        setStats({
+          total_users: 0,
+          total_doctors: 0,
+          pending_doctors: 0,
+          approved_doctors: 0
+        });
+        setDoctors([]);
+        setUsers([]);
+        setIsLoading(false);
+        return;
+      }
 
       // Handle each response separately for better error handling
-      const statsData = statsRes.ok ? await statsRes.json() : null;
-      const doctorsData = doctorsRes.ok ? await doctorsRes.json() : null;
-      const usersData = usersRes.ok ? await usersRes.json() : null;
+      let statsData, doctorsData, usersData;
       
-      // Log error details for debugging
-      if (!statsRes.ok) {
-        const errorText = await statsRes.text();
-        console.error('Stats API error:', statsRes.status, errorText);
-      }
-      if (!doctorsRes.ok) {
-        const errorText = await doctorsRes.text();
-        console.error('Doctors API error:', doctorsRes.status, errorText);
-      }
-      if (!usersRes.ok) {
-        const errorText = await usersRes.text();
-        console.error('Users API error:', usersRes.status, errorText);
+      try {
+        statsData = statsRes.ok ? await statsRes.json() : null;
+        if (!statsRes.ok) {
+          setError('Unable to load dashboard statistics. Please try refreshing the page.');
+        }
+      } catch (e) {
+        setError('Error processing statistics data.');
       }
       
-      console.log('Fetched data:', { statsData, doctorsData, usersData });
-      console.log('Response status details:', {
-        statsOk: statsRes.ok,
-        doctorsOk: doctorsRes.ok,
-        usersOk: usersRes.ok
-      });
+      try {
+        doctorsData = doctorsRes.ok ? await doctorsRes.json() : null;
+        if (!doctorsRes.ok) {
+          setError(prev => prev ? `${prev}\nUnable to load doctors data.` : 'Unable to load doctors data.');
+        }
+      } catch (e) {
+        setError(prev => prev ? `${prev}\nError processing doctors data.` : 'Error processing doctors data.');
+      }
+      
+      try {
+        usersData = usersRes.ok ? await usersRes.json() : null;
+        if (!usersRes.ok) {
+          setError(prev => prev ? `${prev}\nUnable to load users data.` : 'Unable to load users data.');
+        }
+      } catch (e) {
+        setError(prev => prev ? `${prev}\nError processing users data.` : 'Error processing users data.');
+      }
       
       // Set data even if some endpoints fail
+      // Update state with available data
       if (statsData) setStats(statsData);
       
       let doctorsArray: DoctorResponse[] = [];
@@ -129,12 +165,10 @@ export default function AdminDashboardPage() {
       
       if (doctorsData) {
         doctorsArray = doctorsData.doctors || doctorsData || [];
-        console.log('Setting doctors data:', doctorsArray);
       }
       
       if (usersData) {
         usersArray = usersData.users || usersData || [];
-        console.log('Setting users data:', usersArray);
         setUsers(usersArray);
       }
 
@@ -172,10 +206,12 @@ export default function AdminDashboardPage() {
       }
 
     } catch (err: any) {
-      console.error('Error fetching admin data:', err);
-      setError(err.message);
+      setError(
+        'Unable to load dashboard data. Please check your internet connection and refresh the page. ' +
+        'If the problem persists, contact support.'
+      );
       
-      // Add some mock data for development/testing
+      // Add fallback data for development environments only
       const mockStats = {
         total_users: 25,
         total_doctors: 8,
@@ -284,7 +320,7 @@ export default function AdminDashboardPage() {
         }
       ];
       
-      console.log('Using mock data for development');
+      // Development fallback data loaded silently
       setStats(mockStats);
       setDoctors(mockDoctors);
       setUsers(mockUsers);

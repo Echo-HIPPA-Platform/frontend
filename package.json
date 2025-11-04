@@ -1,4 +1,7 @@
 {
   "name": "reaganenoch",
-  "packageManager": "yarn@4.5.3"
+  "packageManager": "yarn@4.5.3",
+  "dependencies": {
+    "react-hot-toast": "^2.6.0"
+  }
 }

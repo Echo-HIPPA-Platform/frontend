@@ -187,7 +187,10 @@ export default function AdminSettings() {
         ]);
       }
     } catch (error) {
-      console.error('Error fetching admin users:', error);
+      setMessage({
+        type: 'error',
+        text: 'Unable to load administrator accounts. Please try refreshing the page.'
+      });
     }
   };
 
@@ -205,7 +208,10 @@ export default function AdminSettings() {
         setSystemSettings(prev => ({ ...prev, ...data }));
       }
     } catch (error) {
-      console.error('Error fetching system settings:', error);
+      setMessage({
+        type: 'error',
+        text: 'Unable to load system settings. Please check your connection and try again.'
+      });
     }
   };
 

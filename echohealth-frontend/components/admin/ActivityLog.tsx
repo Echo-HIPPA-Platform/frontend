@@ -63,8 +63,10 @@ const ActivityLogComponent: React.FC<ActivityLogComponentProps> = ({ className =
       const response = await adminApiService.getActivityLogs(searchFilters);
       setLogs(response.data);
     } catch (err: any) {
-      console.error('Error fetching activity logs:', err);
-      setError(err.message);
+      setError(
+        'Unable to load activity logs. Please try refreshing the page. ' +
+        'If the problem persists, ensure you have a stable internet connection or contact support.'
+      );
       
       // Mock data for development
       const mockLogs: ActivityLog[] = [

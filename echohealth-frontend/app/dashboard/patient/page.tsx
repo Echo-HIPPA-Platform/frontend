@@ -59,7 +59,6 @@ const PaystackScheduleButton = ({ userEmail, userName }: { userEmail: string; us
 
     // Create stable callback functions using useCallback
     const handlePaymentSuccess = useCallback((reference: any) => {
-        console.log("Paystack payment successful. Verifying on backend...");
         setIsProcessingPayment(true);
         
         // Handle verification asynchronously but don't make the callback async
@@ -69,34 +68,35 @@ const PaystackScheduleButton = ({ userEmail, userName }: { userEmail: string; us
                 // Redirect to the actual schedule page after successful verification
                 router.push('/schedule');
             } else {
-                alert('Your payment could not be confirmed by our server. Please contact support with your transaction reference.');
+                alert('Payment verification failed. Please copy your transaction reference and contact our support team for assistance.');
                 setIsProcessingPayment(false);
             }
         }).catch((error) => {
-            console.error('Payment verification error:', error);
-            alert('Payment verification failed. Please contact support.');
+            alert(`Payment verification failed. Please save your transaction reference (${reference.reference}) and contact our support team.`);
             setIsProcessingPayment(false);
         });
     }, [verifyPaymentOnBackend, router]);
 
     const handlePaymentClose = useCallback(() => {
-        console.log('Paystack payment popup closed by user.');
-    }, []);
+        if (isProcessingPayment) {
+            alert('Please wait while we verify your payment...');
+            return;
+        }
+        alert('Payment cancelled. You can try again when you\'re ready.');
+    }, [isProcessingPayment]);
 
     // This function is called when the user clicks the button
     const handlePayment = useCallback(() => {
         // Validate environment variable
         const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
         if (!publicKey) {
-            console.error('Paystack public key not found in environment variables');
-            alert('Payment configuration error. Please contact support.');
+            alert('We\'re currently experiencing issues with our payment system. Please try again later or contact our support team.');
             return;
         }
 
         // Validate user data
         if (!userEmail || !userName) {
-            console.error('User email or name is missing');
-            alert('User information is incomplete. Please refresh the page and try again.');
+            alert('Your session information appears to be incomplete. Please try logging out and back in, or contact our support team if the issue persists.');
             return;
         }
 

@@ -94,10 +94,15 @@ const ChartsAndReportsComponent: React.FC<{ className?: string }> = ({ className
         ]);
         
         // Process and combine real data if available
-        console.log('Real data fetched:', { userStats, consultationStats, revenueStats });
+        if (userStats && consultationStats && revenueStats) {
+          // TODO: Process and combine real data
+          // For now, using mock data as fallback
+        }
         
       } catch (apiError) {
-        console.log('API not available, using mock data:', apiError);
+        // Silently fall back to mock data for development
+        // In production, we might want to show a warning toast
+        setError('Unable to fetch real-time data. Using cached data.');
       }
       
     } catch (err: any) {
@@ -158,7 +163,7 @@ const ChartsAndReportsComponent: React.FC<{ className?: string }> = ({ className
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Export failed:', err);
+      setError('Failed to export data. Please try again.');
     }
   };
 

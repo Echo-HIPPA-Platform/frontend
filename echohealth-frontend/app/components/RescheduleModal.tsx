@@ -5,8 +5,9 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { format } from 'date-fns';
 import { X } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
-export default function RescheduleModal({ appointment, onClose }: { appointment: any; onClose: () => void; }) {
+export default function RescheduleModal({ appointment, onCloseAction }: { appointment: any; onCloseAction: () => Promise<void>; }) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [isRescheduling, setIsRescheduling] = useState(false);
@@ -15,23 +16,42 @@ export default function RescheduleModal({ appointment, onClose }: { appointment:
 
   const handleReschedule = async () => {
     if (!selectedDate || !selectedTime) {
-      alert("Please select a new date and time.");
+      alert("Please select both a date and time for your appointment.");
       return;
     }
-    setIsRescheduling(true);
-    // TODO: Implement API call to PUT /api/v1/appointments/:id/reschedule
-    console.log(`Rescheduling appointment ${appointment.id} to ${format(selectedDate, 'PPP')} at ${selectedTime}`);
-    setTimeout(() => { // Simulating API call
+    
+    try {
+      setIsRescheduling(true);
+      // TODO: Implement API call to PUT /api/v1/appointments/:id/reschedule
+      const response = await fetch(`/api/v1/appointments/${appointment.id}/reschedule`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({
+          date: format(selectedDate, 'yyyy-MM-dd'),
+          time: selectedTime
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reschedule appointment. Please try again.');
+      }
+
       alert("Appointment rescheduled successfully!");
+      await onCloseAction(); // Close the modal
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "An unexpected error occurred");
+    } finally {
       setIsRescheduling(false);
-      onClose(); // Close the modal
-    }, 1500);
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-xl p-8 max-w-2xl w-full relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-800">
+        <button onClick={() => onCloseAction()} className="absolute top-4 right-4 text-gray-400 hover:text-gray-800">
             <X size={24}/>
         </button>
 

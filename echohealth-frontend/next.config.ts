@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/v1/:path*',
-        destination: 'http://20.185.56.164:8080/api/v1/:path*', // Backend server URL
+        destination: 'http://localhost:8080/api/v1/:path*', // Local backend server URL
       },
     ]
   },
